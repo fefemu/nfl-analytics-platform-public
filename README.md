@@ -147,19 +147,12 @@ only, grant it read-only repository contents access and never commit it to Git.
 > [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 The public dashboard supports privacy-conscious Google Analytics 4 page views.
-Store the web-stream Measurement ID in the hosting provider's secret manager:
-
-```text
-NFL_ANALYTICS_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
-```
-
-At process startup, `sitecustomize.py` injects a consent-aware tag into the
-outer Streamlit HTML shell. No Google tag loads before the visitor accepts the
-one-time analytics banner. The choice is persisted in browser local storage and
-can be changed through the small Privacy control. Google Signals, advertising
-storage and personalization remain disabled. Page and EN/HU language changes
-are tracked without counting same-page Streamlit reruns. If the setting is
-absent or invalid, analytics stays disabled and the application continues.
+The public web-stream Measurement ID is stored in the dashboard analytics
+module; it is a destination identifier and does not grant access to Analytics
+data. A non-dismissible consent dialog is displayed once per Streamlit session.
+No Google tag loads unless the visitor explicitly accepts usage analytics.
+Google Signals, advertising storage and personalization remain disabled. Page
+and EN/HU language changes are tracked without counting same-page reruns.
 
 The scheduled artifact refresh remains.
 

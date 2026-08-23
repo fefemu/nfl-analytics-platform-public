@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from src.dashboard.analytics import render_analytics
 from src.dashboard.components import (
     empty_state,
     inject_styles,
@@ -109,6 +110,7 @@ with st.sidebar:
     )
 
 page_key = selected
+render_analytics(page_key, language)
 page_title = tr(language, PAGES[selected][1])
 refresh_label = None
 if health.latest_refresh_at is not None:
