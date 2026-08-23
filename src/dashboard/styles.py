@@ -11,9 +11,6 @@ APP_CSS = """
 .stApp { background: radial-gradient(circle at 70% -10%, #102944 0, var(--canvas) 42%); }
 [data-testid="stHeader"] { background: transparent; }
 [data-testid="stToolbar"], [data-testid="stAppDeployButton"], #MainMenu { display:none !important; }
-@media (min-width: 761px) {
-  [data-testid="stSidebarCollapseButton"] { display:none !important; }
-}
 [data-testid="stSidebar"] { background: linear-gradient(180deg, #071525 0%, #06111f 100%); border-right: 1px solid var(--border); min-width:285px; max-width:285px; }
 [data-testid="stSidebar"] > div { padding-top: 1.2rem; }
 .block-container { max-width: 1540px; padding: 1.4rem 2rem 3rem; }
