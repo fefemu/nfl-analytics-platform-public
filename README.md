@@ -146,7 +146,20 @@ only, grant it read-only repository contents access and never commit it to Git.
 > expose only the rendered dashboard. See
 > [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Public hosting, product analytics and the scheduled artifact refresh remain.
+The public dashboard supports privacy-conscious Google Analytics 4 page views.
+Store the web-stream Measurement ID in the hosting provider's secret manager:
+
+```text
+NFL_ANALYTICS_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+The integration records the dashboard page and EN/HU language, disables Google
+Signals and advertising-personalization signals, defaults all consent categories
+to denied, and suppresses duplicate page views caused by immediate Streamlit
+reruns. If the setting is absent or invalid, analytics stays disabled and the
+application continues normally.
+
+The scheduled artifact refresh remains.
 
 ---
 
