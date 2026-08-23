@@ -11,9 +11,9 @@ from src.dashboard.pages.about import (
 
 def test_about_diagrams_are_localized_in_english() -> None:
     diagrams = (
-        (_localized_diagram(ARCHITECTURE_DIAGRAM, "EN").getvalue(), b"Technology architecture", b"Technol\xc3\xb3giai architekt\xc3\xbara"),
-        (_localized_diagram(DATA_MODEL_DIAGRAM, "EN").getvalue(), b"DuckDB data model", b"DuckDB adatmodell"),
-        (_localized_diagram(DATA_FLOW_DIAGRAM, "EN").getvalue(), b"Data refresh workflow", b"Adatfriss\xc3\xadt\xc3\xa9si folyamat"),
+        (_localized_diagram(ARCHITECTURE_DIAGRAM, "EN"), "Technology architecture", "Technológiai architektúra"),
+        (_localized_diagram(DATA_MODEL_DIAGRAM, "EN"), "DuckDB data model", "DuckDB adatmodell"),
+        (_localized_diagram(DATA_FLOW_DIAGRAM, "EN"), "Data refresh workflow", "Adatfrissítési folyamat"),
     )
     for content, english_label, hungarian_label in diagrams:
         assert english_label in content
@@ -21,9 +21,9 @@ def test_about_diagrams_are_localized_in_english() -> None:
 
 
 def test_about_diagrams_remain_hungarian_in_hungarian_view() -> None:
-    assert b"Technol\xc3\xb3giai architekt\xc3\xbara" in _localized_diagram(
+    assert "Technológiai architektúra" in _localized_diagram(
         ARCHITECTURE_DIAGRAM, "HU"
-    ).getvalue()
+    )
 from xml.etree import ElementTree
 import re
 
