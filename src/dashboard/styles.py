@@ -13,6 +13,18 @@ APP_CSS = """
 [data-testid="stToolbar"], [data-testid="stAppDeployButton"], #MainMenu { display:none !important; }
 [data-testid="stSidebar"] { background: linear-gradient(180deg, #071525 0%, #06111f 100%); border-right: 1px solid var(--border); min-width:285px; max-width:285px; }
 [data-testid="stSidebar"] > div { padding-top: 1.2rem; }
+@media (min-width: 761px) {
+  [data-testid="stSidebar"] {
+    display:block !important; visibility:visible !important;
+    position:relative !important; left:0 !important;
+    width:285px !important; min-width:285px !important; max-width:285px !important;
+    margin-left:0 !important; transform:none !important;
+    flex:0 0 285px !important; overflow:visible !important;
+  }
+  [data-testid="stSidebar"] > div { display:block !important; width:285px !important; }
+  [data-testid="stSidebarCollapseButton"], [data-testid="collapsedControl"],
+  [data-testid="stSidebarCollapsedControl"] { display:none !important; }
+}
 .block-container { max-width: 1540px; padding: 1.4rem 2rem 3rem; }
 h1, h2, h3, p, label { color: var(--text); }
 .nap-brand { display:flex; align-items:center; gap:.7rem; font-weight:800; font-size:1.2rem; padding:.5rem 0 1.2rem; }
