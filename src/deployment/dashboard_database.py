@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import tempfile
+import time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
@@ -19,8 +22,10 @@ GITHUB_ASSET_ENV = "NFL_ANALYTICS_DASHBOARD_GITHUB_ASSET"
 DEFAULT_GITHUB_ASSET = "dashboard.duckdb"
 GITHUB_API_ROOT = "https://api.github.com"
 MAX_DATABASE_BYTES = 250 * 1024 * 1024
+GITHUB_REQUEST_ATTEMPTS = 4
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATABASE_FILE = PROJECT_ROOT / "data" / "nfl_analytics.duckdb"
+LOGGER = logging.getLogger(__name__)
 
 
 def _request_headers(
@@ -33,9 +38,94 @@ def _request_headers(
         "User-Agent": "NFL-Analytics-Platform/1.0",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    if token and token.strip():
+        headers["Authorization"] = f"Bearer {token.strip()}"
     return headers
+
+
+def _github_error_message(error: HTTPError) -> str:
+    """Return a safe, actionable description of a GitHub API failure."""
+
+    try:
+        payload = json.loads(error.read().decode("utf-8", errors="replace"))
+        github_message = str(payload.get("message", "")).strip()
+    except (json.JSONDecodeError, OSError, ValueError):
+        github_message = ""
+
+    rate_remaining = error.headers.get("X-RateLimit-Remaining")
+    rate_reset = error.headers.get("X-RateLimit-Reset")
+    details = [f"HTTP {error.code}"]
+    if github_message:
+        details.append(github_message)
+    if rate_remaining is not None:
+        details.append(f"rate-limit remaining={rate_remaining}")
+    if rate_reset:
+        details.append(f"reset={rate_reset}")
+    return "; ".join(details)
+
+
+def _is_retryable_github_error(error: HTTPError, description: str) -> bool:
+    """Return whether a GitHub HTTP failure is likely to be transient."""
+
+    lowered = description.lower()
+    rate_limited = error.headers.get("X-RateLimit-Remaining") == "0"
+    return (
+        error.code in {408, 429}
+        or 500 <= error.code < 600
+        or (
+            error.code == 403
+            and (
+                rate_limited
+                or "rate limit" in lowered
+                or "secondary rate" in lowered
+                or "abuse" in lowered
+            )
+        )
+    )
+
+
+def _open_github_request(request: Request, *, timeout: int):
+    """Open a GitHub request with bounded retries and useful diagnostics."""
+
+    last_error: HTTPError | URLError | None = None
+    final_attempt = 1
+    for attempt in range(1, GITHUB_REQUEST_ATTEMPTS + 1):
+        final_attempt = attempt
+        try:
+            return urlopen(request, timeout=timeout)
+        except HTTPError as error:
+            last_error = error
+            description = _github_error_message(error)
+            retryable = _is_retryable_github_error(error, description)
+        except URLError as error:
+            last_error = error
+            description = str(error.reason)
+            retryable = True
+
+        if not retryable or attempt == GITHUB_REQUEST_ATTEMPTS:
+            break
+        delay = float(2 ** (attempt - 1))
+        LOGGER.warning(
+            "GitHub dashboard request attempt %s/%s failed: %s. "
+            "Retrying in %.1f seconds.",
+            attempt,
+            GITHUB_REQUEST_ATTEMPTS,
+            description,
+            delay,
+        )
+        time.sleep(delay)
+
+    if isinstance(last_error, HTTPError):
+        raise RuntimeError(
+            "GitHub dashboard artifact request failed after "
+            f"{final_attempt} attempt(s): {description}. "
+            "For a private repository, verify that the configured fine-grained "
+            "token can access the selected repository with Contents: read-only."
+        ) from last_error
+    raise RuntimeError(
+        "GitHub dashboard artifact request failed after "
+        f"{final_attempt} attempt(s): {description}."
+    ) from last_error
 
 
 def _latest_github_asset_url(
@@ -54,7 +144,7 @@ def _latest_github_asset_url(
         f"{GITHUB_API_ROOT}/repos/{repository}/releases/latest",
         headers=_request_headers(token),
     )
-    with urlopen(request, timeout=30) as response:
+    with _open_github_request(request, timeout=30) as response:
         release = json.load(response)
 
     matches = [
@@ -92,7 +182,12 @@ def _download_database(
     )
     downloaded = 0
     try:
-        with urlopen(request, timeout=60) as response, temporary.open("wb") as output:
+        open_request = (
+            _open_github_request(request, timeout=60)
+            if token
+            else urlopen(request, timeout=60)
+        )
+        with open_request as response, temporary.open("wb") as output:
             content_length = response.headers.get("Content-Length")
             if content_length and int(content_length) > MAX_DATABASE_BYTES:
                 raise RuntimeError("Dashboard database artifact exceeds 250 MB.")

@@ -3,6 +3,7 @@
 import json
 from io import BytesIO
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 
@@ -156,6 +157,67 @@ def test_private_github_release_rejects_missing_asset(
             "secret-token",
             "dashboard.duckdb",
         )
+
+
+def test_github_request_retries_forbidden_and_reports_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+    error_payload = BytesIO(b'{"message": "API rate limit exceeded"}')
+
+    def forbidden(request, timeout):
+        calls.append((request.full_url, timeout))
+        raise HTTPError(
+            request.full_url,
+            403,
+            "Forbidden",
+            {"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "123456"},
+            error_payload if len(calls) == 1 else BytesIO(
+                b'{"message": "API rate limit exceeded"}'
+            ),
+        )
+
+    monkeypatch.setattr(dashboard_database, "urlopen", forbidden)
+    monkeypatch.setattr(dashboard_database.time, "sleep", lambda seconds: None)
+
+    with pytest.raises(
+        RuntimeError,
+        match=r"HTTP 403.*rate-limit remaining=0",
+    ):
+        dashboard_database._latest_github_asset_url(
+            "fefemu/nfl-analytics-platform-data",
+            " secret-token ",
+            "dashboard.duckdb",
+        )
+
+    assert len(calls) == dashboard_database.GITHUB_REQUEST_ATTEMPTS
+
+
+def test_github_request_does_not_retry_permission_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+
+    def forbidden(request, timeout):
+        calls.append((request.full_url, timeout))
+        raise HTTPError(
+            request.full_url,
+            403,
+            "Forbidden",
+            {"X-RateLimit-Remaining": "4999"},
+            BytesIO(b'{"message": "Resource not accessible by personal access token"}'),
+        )
+
+    monkeypatch.setattr(dashboard_database, "urlopen", forbidden)
+
+    with pytest.raises(RuntimeError, match=r"after 1 attempt\(s\).*HTTP 403"):
+        dashboard_database._latest_github_asset_url(
+            "fefemu/nfl-analytics-platform-data",
+            "secret-token",
+            "dashboard.duckdb",
+        )
+
+    assert len(calls) == 1
 
 
 def test_non_https_url_is_rejected(
