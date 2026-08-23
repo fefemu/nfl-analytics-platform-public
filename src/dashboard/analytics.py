@@ -28,7 +28,7 @@ def get_ga4_measurement_id() -> str | None:
 
 
 def build_ga4_html(measurement_id: str, page_key: str, language: str) -> str:
-    """Build an isolated GA4 page-view tag with privacy defaults and rerun deduping."""
+    """Build an isolated, consented GA4 page-view tag with rerun deduping."""
 
     if not _MEASUREMENT_ID_PATTERN.fullmatch(measurement_id):
         raise ValueError("Invalid GA4 Measurement ID.")
@@ -43,7 +43,7 @@ def build_ga4_html(measurement_id: str, page_key: str, language: str) -> str:
 window.dataLayer = window.dataLayer || [];
 function gtag(){{dataLayer.push(arguments);}}
 gtag('consent', 'default', {{
-  'analytics_storage': 'denied',
+  'analytics_storage': 'granted',
   'ad_storage': 'denied',
   'ad_user_data': 'denied',
   'ad_personalization': 'denied'
@@ -57,10 +57,9 @@ gtag('config', {json.dumps(measurement_id)}, {{
 try {{
   const storage = window.parent.sessionStorage;
   const key = 'nap_ga4_last_page_view';
-  const now = Date.now();
-  const previous = JSON.parse(storage.getItem(key) || '{{}}');
-  if (previous.event !== {json.dumps(event_key)} || now - previous.at > 2000) {{
-    storage.setItem(key, JSON.stringify({{event: {json.dumps(event_key)}, at: now}}));
+  const previous = storage.getItem(key);
+  if (previous !== {json.dumps(event_key)}) {{
+    storage.setItem(key, {json.dumps(event_key)});
     gtag('event', 'page_view', {{
       'page_title': {json.dumps(safe_page)},
       'page_location': window.parent.location.href,
@@ -82,15 +81,42 @@ try {{
 """.strip()
 
 
-def track_page_view(page_key: str, language: str) -> bool:
-    """Emit one GA4 page-view component when analytics is configured."""
+def render_analytics_consent(language: str) -> bool:
+    """Render an explicit opt-in control when GA4 is configured."""
+
+    if get_ga4_measurement_id() is None:
+        return False
+    if language == "HU":
+        label = "Anonim látogatottsági statisztika"
+        help_text = (
+            "Engedélyezés után a Google Analytics anonim oldalmegtekintési, "
+            "eszköz- és hozzávetőleges országadatokat mér. Hirdetési és "
+            "személyre szabási funkciókat nem használunk."
+        )
+    else:
+        label = "Anonymous usage analytics"
+        help_text = (
+            "When enabled, Google Analytics measures anonymous page views, "
+            "device information and approximate country. Advertising and "
+            "personalization features remain disabled."
+        )
+    return st.toggle(
+        label,
+        value=False,
+        key="dashboard_analytics_consent",
+        help=help_text,
+    )
+
+
+def track_page_view(page_key: str, language: str, consent_granted: bool) -> bool:
+    """Emit one GA4 page-view component after explicit analytics consent."""
 
     measurement_id = get_ga4_measurement_id()
-    if measurement_id is None:
+    if measurement_id is None or not consent_granted:
         return False
     components.html(
         build_ga4_html(measurement_id, page_key, language),
-        height=0,
-        width=0,
+        height=1,
+        width=1,
     )
     return True

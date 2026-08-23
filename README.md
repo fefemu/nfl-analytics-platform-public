@@ -153,11 +153,11 @@ Store the web-stream Measurement ID in the hosting provider's secret manager:
 NFL_ANALYTICS_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
-The integration records the dashboard page and EN/HU language, disables Google
-Signals and advertising-personalization signals, defaults all consent categories
-to denied, and suppresses duplicate page views caused by immediate Streamlit
-reruns. If the setting is absent or invalid, analytics stays disabled and the
-application continues normally.
+The integration records the dashboard page and EN/HU language only after the
+visitor explicitly enables anonymous usage analytics in the sidebar. Google
+Signals, advertising storage and personalization remain disabled. Immediate
+Streamlit reruns on the same page are deduplicated. If the setting is absent or
+invalid, analytics stays disabled and the application continues normally.
 
 The scheduled artifact refresh remains.
 

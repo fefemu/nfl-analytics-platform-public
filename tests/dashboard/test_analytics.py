@@ -1,6 +1,10 @@
 import pytest
 
-from src.dashboard.analytics import build_ga4_html, get_ga4_measurement_id
+from src.dashboard.analytics import (
+    build_ga4_html,
+    get_ga4_measurement_id,
+    track_page_view,
+)
 
 
 def test_measurement_id_is_loaded_from_environment(monkeypatch):
@@ -18,7 +22,7 @@ def test_invalid_measurement_id_disables_analytics(monkeypatch):
 def test_ga4_html_uses_privacy_defaults_and_page_metadata():
     content = build_ga4_html("G-ABCD1234", "BETTING", "HU")
 
-    assert "'analytics_storage': 'denied'" in content
+    assert "'analytics_storage': 'granted'" in content
     assert "'ad_storage': 'denied'" in content
     assert "'allow_google_signals': false" in content
     assert "'send_page_view': false" in content
@@ -26,8 +30,15 @@ def test_ga4_html_uses_privacy_defaults_and_page_metadata():
     assert "BETTING:HU" in content
     assert "dashboard_language" in content
     assert "'/betting'" in content
+    assert "previous !== \"BETTING:HU\"" in content
 
 
 def test_ga4_html_rejects_invalid_measurement_id():
     with pytest.raises(ValueError, match="Invalid GA4 Measurement ID"):
         build_ga4_html("UA-123", "OVERVIEW", "EN")
+
+
+def test_tracking_requires_explicit_consent(monkeypatch):
+    monkeypatch.setenv("NFL_ANALYTICS_GA4_MEASUREMENT_ID", "G-ABCD1234")
+
+    assert track_page_view("OVERVIEW", "EN", False) is False
