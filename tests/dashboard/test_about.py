@@ -1,3 +1,7 @@
+import base64
+from xml.etree import ElementTree
+import re
+
 from src.dashboard.pages.about import (
     ARCHITECTURE_DIAGRAM,
     DATA_FLOW_DIAGRAM,
@@ -9,11 +13,17 @@ from src.dashboard.pages.about import (
 )
 
 
+def _decode_diagram(uri: str) -> str:
+    prefix, encoded = uri.split(",", maxsplit=1)
+    assert prefix == "data:image/svg+xml;base64"
+    return base64.b64decode(encoded).decode("utf-8")
+
+
 def test_about_diagrams_are_localized_in_english() -> None:
     diagrams = (
-        (_localized_diagram(ARCHITECTURE_DIAGRAM, "EN"), "Technology architecture", "Technológiai architektúra"),
-        (_localized_diagram(DATA_MODEL_DIAGRAM, "EN"), "DuckDB data model", "DuckDB adatmodell"),
-        (_localized_diagram(DATA_FLOW_DIAGRAM, "EN"), "Data refresh workflow", "Adatfrissítési folyamat"),
+        (_decode_diagram(_localized_diagram(ARCHITECTURE_DIAGRAM, "EN")), "Technology architecture", "Technológiai architektúra"),
+        (_decode_diagram(_localized_diagram(DATA_MODEL_DIAGRAM, "EN")), "DuckDB data model", "DuckDB adatmodell"),
+        (_decode_diagram(_localized_diagram(DATA_FLOW_DIAGRAM, "EN")), "Data refresh workflow", "Adatfrissítési folyamat"),
     )
     for content, english_label, hungarian_label in diagrams:
         assert english_label in content
@@ -21,11 +31,9 @@ def test_about_diagrams_are_localized_in_english() -> None:
 
 
 def test_about_diagrams_remain_hungarian_in_hungarian_view() -> None:
-    assert "Technológiai architektúra" in _localized_diagram(
-        ARCHITECTURE_DIAGRAM, "HU"
+    assert "Technológiai architektúra" in _decode_diagram(
+        _localized_diagram(ARCHITECTURE_DIAGRAM, "HU")
     )
-from xml.etree import ElementTree
-import re
 
 
 def test_about_assets_exist() -> None:

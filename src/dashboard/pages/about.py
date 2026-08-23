@@ -1,5 +1,6 @@
 """Bilingual platform story, architecture and author profile."""
 
+import base64
 from pathlib import Path
 
 import streamlit as st
@@ -100,13 +101,23 @@ DIAGRAM_TRANSLATIONS = {
 
 
 def _localized_diagram(path: Path, language: Language) -> str:
-    """Return an SVG translated for the active interface language."""
+    """Return an isolated SVG data URI translated for the active language."""
 
     svg = path.read_text(encoding="utf-8")
     if language == "EN":
         for hungarian, english in DIAGRAM_TRANSLATIONS[path.name].items():
             svg = svg.replace(hungarian, english)
-    return svg
+    encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+    return f"data:image/svg+xml;base64,{encoded}"
+
+
+def _render_diagram(path: Path, language: Language) -> None:
+    uri = _localized_diagram(path, language)
+    st.markdown(
+        f'<img src="{uri}" style="width:100%;height:auto" '
+        'alt="Platform technical diagram">',
+        unsafe_allow_html=True,
+    )
 
 
 def _feature_cards(language: Language) -> None:
@@ -296,30 +307,21 @@ def _diagrams(language: Language) -> None:
         ("Architecture", "Data model", "Data flow")
     )
     with architecture:
-        st.markdown(
-            _localized_diagram(ARCHITECTURE_DIAGRAM, language),
-            unsafe_allow_html=True,
-        )
+        _render_diagram(ARCHITECTURE_DIAGRAM, language)
         st.caption(
             "A diagram a platform jelenlegi technológiai felépítését mutatja az adatforrásoktól a felhasználói felületig."
             if language == "HU" else
             "The current operational path from source systems to Streamlit; no planned components are shown."
         )
     with data_model:
-        st.markdown(
-            _localized_diagram(DATA_MODEL_DIAGRAM, language),
-            unsafe_allow_html=True,
-        )
+        _render_diagram(DATA_MODEL_DIAGRAM, language)
         st.caption(
             "A DuckDB aktuális fizikai táblái: 9 RAW, 12 processed és 42 analytics tábla. A szaggatott kapcsolatok kódban használt logikai joinokat jelölnek, nem deklarált idegen kulcsokat."
             if language == "HU" else
             "The current physical DuckDB tables: 9 RAW, 12 processed and 42 analytics tables. Dashed relationships are logical joins used in code, not declared foreign keys."
         )
     with data_flow:
-        st.markdown(
-            _localized_diagram(DATA_FLOW_DIAGRAM, language),
-            unsafe_allow_html=True,
-        )
+        _render_diagram(DATA_FLOW_DIAGRAM, language)
         st.caption(
             "Az auditált in-season refresh tényleges sorrendje. Sikertelen validáció esetén a futás FAILED státusszal leáll, és nem készül forward archive."
             if language == "HU" else

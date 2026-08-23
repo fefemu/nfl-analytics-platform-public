@@ -56,6 +56,20 @@ if query_game_id:
 if query_language in ("EN", "HU") and "dashboard_language" not in st.session_state:
     st.session_state["dashboard_language"] = query_language
 
+
+def _sync_navigation_query() -> None:
+    """Persist canonical navigation state without resetting either widget."""
+
+    st.query_params.from_dict({
+        "language": st.session_state.get("dashboard_language", "EN"),
+        "page": st.session_state.get("dashboard_page", "OVERVIEW"),
+    })
+
+
+def _select_dashboard_page(selector_key: str) -> None:
+    st.session_state["dashboard_page"] = st.session_state[selector_key]
+    _sync_navigation_query()
+
 with st.sidebar:
     render_brand()
     language: Language = st.segmented_control(
@@ -63,23 +77,24 @@ with st.sidebar:
         ("EN", "HU"),
         default="EN",
         key="dashboard_language",
+        on_change=_sync_navigation_query,
         label_visibility="collapsed",
     )
+    selector_key = f"dashboard_page_selector_{language}"
+    if selector_key not in st.session_state:
+        st.session_state[selector_key] = st.session_state.get(
+            "dashboard_page", "OVERVIEW"
+        )
     selected = st.radio(
         "Navigation",
         tuple(PAGES),
         format_func=lambda key: f"{PAGES[key][0]}  {tr(language, PAGES[key][1])}",
-        key="dashboard_page",
+        key=selector_key,
+        on_change=_select_dashboard_page,
+        args=(selector_key,),
         label_visibility="collapsed",
     )
-    if (
-        st.query_params.get("language") != language
-        or st.query_params.get("page") != selected
-    ):
-        # Synchronize both navigation values together. Updating the language
-        # parameter earlier caused Streamlit to rerun before the current page
-        # was written, which could send users back to the overview.
-        st.query_params.update(language=language, page=selected)
+    selected = st.session_state.get("dashboard_page", selected)
     st.markdown("<div class='nap-divider'></div>", unsafe_allow_html=True)
     state = tr(language, "data_ready") if health.ready else tr(language, "refresh_required")
     st.markdown(status_pill(state, health.ready), unsafe_allow_html=True)
