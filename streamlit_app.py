@@ -65,8 +65,6 @@ with st.sidebar:
         key="dashboard_language",
         label_visibility="collapsed",
     )
-    if st.query_params.get("language") != language:
-        st.query_params["language"] = language
     selected = st.radio(
         "Navigation",
         tuple(PAGES),
@@ -74,8 +72,14 @@ with st.sidebar:
         key="dashboard_page",
         label_visibility="collapsed",
     )
-    if st.query_params.get("page") != selected:
-        st.query_params["page"] = selected
+    if (
+        st.query_params.get("language") != language
+        or st.query_params.get("page") != selected
+    ):
+        # Synchronize both navigation values together. Updating the language
+        # parameter earlier caused Streamlit to rerun before the current page
+        # was written, which could send users back to the overview.
+        st.query_params.update(language=language, page=selected)
     st.markdown("<div class='nap-divider'></div>", unsafe_allow_html=True)
     state = tr(language, "data_ready") if health.ready else tr(language, "refresh_required")
     st.markdown(status_pill(state, health.ready), unsafe_allow_html=True)

@@ -1,5 +1,6 @@
 """Bilingual platform story, architecture and author profile."""
 
+from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
@@ -14,6 +15,99 @@ DATA_FLOW_DIAGRAM = ASSET_DIRECTORY / "platform_data_flow.svg"
 GITHUB_URL = "https://github.com/fefemu/nfl-analytics-platform-public"
 LINKEDIN_URL = "https://www.linkedin.com/in/ferenc-kaizer-038625b0/"
 EMAIL_ADDRESS = "kaizer.ferenc88@gmail.com"
+
+
+DIAGRAM_TRANSLATIONS = {
+    "platform_architecture.svg": {
+        "Technológiai architektúra": "Technology architecture",
+        "Milyen technológiai komponensekből épül fel a platform?": "Which technology components power the platform?",
+        "Adatforrások": "Data sources",
+        "Külső futball- és piaci adatok": "External football and market data",
+        "Adatfeldolgozás": "Data processing",
+        "Begyűjtés · tisztítás · feature engineering": "Ingestion · cleaning · feature engineering",
+        "Adattárolás": "Data storage",
+        "Lokális analitikai adattár": "Local analytics store",
+        "és lekérdezések": "and queries",
+        "Modellezés és szimuláció": "Modeling and simulation",
+        "Predikciók és szezonkimenetek": "Predictions and season outcomes",
+        "Megjelenítés": "Presentation",
+        "Interaktív webes felület": "Interactive web interface",
+        "Fejlesztés és minőségbiztosítás": "Development and quality assurance",
+    },
+    "platform_data_model.svg": {
+        "DuckDB adatmodell": "DuckDB data model",
+        "mind a 63 aktuális fizikai tábla": "all 63 current physical tables",
+        "1. Forrásadatok — RAW": "1. Source data — RAW",
+        "Mérkőzés és játékos": "Games and players",
+        "Depth chart és sérülés": "Depth charts and injuries",
+        "Odds snapshotok": "Odds snapshots",
+        "2. Tisztított és egységesített adatok — PROCESSED": "2. Cleaned and standardized data — PROCESSED",
+        "Mérkőzés és teljesítmény": "Games and performance",
+        "Játékos és depth chart": "Players and depth charts",
+        "Külső rating és odds": "External ratings and odds",
+        "3. Elemzési és modellezési réteg — ANALYTICS": "3. Analytics and modeling layer — ANALYTICS",
+        "Feature-ök": "Features",
+        "Modellezési adatok és governance": "Modeling data and governance",
+        "Kapcsolás: game_id": "Join key: game_id",
+        "Játékoskapcsolás: gsis_id": "Player join: gsis_id",
+        "Csapatkapcsolás: team": "Team join: team",
+        "Historikus betting audit": "Historical betting audit",
+        "Meccs-, market- és időpontkulcsok": "Game, market and timestamp keys",
+        "a historikus kiértékeléshez.": "for historical evaluation.",
+        "4. Alkalmazási kimenetek — ANALYTICS OUTPUT": "4. Application outputs — ANALYTICS OUTPUT",
+        "Aktuális előrejelzések": "Current predictions",
+        "Betting és value": "Betting and value",
+        "Szezon-szimuláció": "Season simulation",
+        "Jelmagyarázat:": "Legend:",
+        "adattranszformáció": "data transformation",
+        "logikai kapcsolat (nem deklarált FK)": "logical relationship (not a declared FK)",
+    },
+    "platform_data_flow.svg": {
+        "Adatfrissítési folyamat": "Data refresh workflow",
+        "Három fázisban a frissítés indításától az új eredmények megjelenéséig": "Three phases from refresh start to published results",
+        "ADAT ÉS MODELLEZÉS": "DATA AND MODELING",
+        "1. Frissítés indítása": "1. Start refresh",
+        "Online API vagy lokális": "Online API or local",
+        "odds snapshot mód": "odds snapshot mode",
+        "2. Auditbejegyzés": "2. Audit record",
+        "státusz: RUNNING": "status: RUNNING",
+        "3. Modellezési pipeline": "3. Modeling pipeline",
+        "→ modeling dataset/splits/governance → predictionök": "→ modeling dataset/splits/governance → predictions",
+        "→ várt pontok → szezon-szimuláció": "→ implied scores → season simulation",
+        "A builderek validáció után commitolnak.": "Builders commit after validation.",
+        "Modellezés": "Modeling",
+        "sikeres?": "successful?",
+        "PIAC ÉS PUBLIKÁLÁS": "MARKET AND PUBLISHING",
+        "4. Odds pipeline": "4. Odds pipeline",
+        "Piaci adatok és": "Market data and",
+        "számítások rendben?": "calculations valid?",
+        "Kickoff előtti előrejelzések rögzítése": "Archive pre-kickoff predictions",
+        "későbbi kiértékeléshez": "for later evaluation",
+        "6. Sikeres lezárás": "6. Successful completion",
+        "státusz: SUCCESS": "status: SUCCESS",
+        "KISZOLGÁLÁS": "SERVING",
+        "7. Validált DuckDB-outputok": "7. Validated DuckDB outputs",
+        "prediction · betting · simulation táblák": "prediction · betting · simulation tables",
+        "8. Streamlit megjelenítés": "8. Streamlit presentation",
+        "Read-only hozzáférés az új outputokhoz": "Read-only access to new outputs",
+        "9. Adatok frissítve": "9. Data refreshed",
+        "Legutóbbi sikeres output időpontja": "Latest successful output timestamp",
+        "Hibaág: futás megszakítása": "Failure path: stop the run",
+        "státusz: FAILED · hibaüzenet mentése · nincs Forward archive": "status: FAILED · save error message · no Forward archive",
+        "nem": "no",
+        "igen": "yes",
+    },
+}
+
+
+def _localized_diagram(path: Path, language: Language) -> BytesIO:
+    """Return an SVG translated for the active interface language."""
+
+    svg = path.read_text(encoding="utf-8")
+    if language == "EN":
+        for hungarian, english in DIAGRAM_TRANSLATIONS[path.name].items():
+            svg = svg.replace(hungarian, english)
+    return BytesIO(svg.encode("utf-8"))
 
 
 def _feature_cards(language: Language) -> None:
@@ -203,21 +297,21 @@ def _diagrams(language: Language) -> None:
         ("Architecture", "Data model", "Data flow")
     )
     with architecture:
-        st.image(str(ARCHITECTURE_DIAGRAM), width="stretch")
+        st.image(_localized_diagram(ARCHITECTURE_DIAGRAM, language), width="stretch")
         st.caption(
             "A diagram a platform jelenlegi technológiai felépítését mutatja az adatforrásoktól a felhasználói felületig."
             if language == "HU" else
             "The current operational path from source systems to Streamlit; no planned components are shown."
         )
     with data_model:
-        st.image(str(DATA_MODEL_DIAGRAM), width="stretch")
+        st.image(_localized_diagram(DATA_MODEL_DIAGRAM, language), width="stretch")
         st.caption(
             "A DuckDB aktuális fizikai táblái: 9 RAW, 12 processed és 42 analytics tábla. A szaggatott kapcsolatok kódban használt logikai joinokat jelölnek, nem deklarált idegen kulcsokat."
             if language == "HU" else
             "The current physical DuckDB tables: 9 RAW, 12 processed and 42 analytics tables. Dashed relationships are logical joins used in code, not declared foreign keys."
         )
     with data_flow:
-        st.image(str(DATA_FLOW_DIAGRAM), width="stretch")
+        st.image(_localized_diagram(DATA_FLOW_DIAGRAM, language), width="stretch")
         st.caption(
             "Az auditált in-season refresh tényleges sorrendje. Sikertelen validáció esetén a futás FAILED státusszal leáll, és nem készül forward archive."
             if language == "HU" else

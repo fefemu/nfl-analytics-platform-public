@@ -1,11 +1,29 @@
 from src.dashboard.pages.about import (
     ARCHITECTURE_DIAGRAM,
-    DATA_MODEL_DIAGRAM,
     DATA_FLOW_DIAGRAM,
+    DATA_MODEL_DIAGRAM,
+    _localized_diagram,
     EMAIL_ADDRESS,
     GITHUB_URL,
     LINKEDIN_URL,
 )
+
+
+def test_about_diagrams_are_localized_in_english() -> None:
+    diagrams = (
+        (_localized_diagram(ARCHITECTURE_DIAGRAM, "EN").getvalue(), b"Technology architecture", b"Technol\xc3\xb3giai architekt\xc3\xbara"),
+        (_localized_diagram(DATA_MODEL_DIAGRAM, "EN").getvalue(), b"DuckDB data model", b"DuckDB adatmodell"),
+        (_localized_diagram(DATA_FLOW_DIAGRAM, "EN").getvalue(), b"Data refresh workflow", b"Adatfriss\xc3\xadt\xc3\xa9si folyamat"),
+    )
+    for content, english_label, hungarian_label in diagrams:
+        assert english_label in content
+        assert hungarian_label not in content
+
+
+def test_about_diagrams_remain_hungarian_in_hungarian_view() -> None:
+    assert b"Technol\xc3\xb3giai architekt\xc3\xbara" in _localized_diagram(
+        ARCHITECTURE_DIAGRAM, "HU"
+    ).getvalue()
 from xml.etree import ElementTree
 import re
 
