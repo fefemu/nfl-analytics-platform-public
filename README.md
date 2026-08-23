@@ -117,10 +117,27 @@ python -m src.deployment.build_dashboard_snapshot
 
 The generated `data/deployment/dashboard.duckdb` contains only the tables used
 by the public application and is excluded from Git. Local development keeps
-using `data/nfl_analytics.duckdb`. A hosted application can use either an
-explicit local artifact path through `NFL_ANALYTICS_DASHBOARD_DATABASE`, or an
-HTTPS artifact URL through `NFL_ANALYTICS_DASHBOARD_DATABASE_URL`. Remote
-artifacts are downloaded once into the runtime cache and opened read-only.
+using `data/nfl_analytics.duckdb`. A hosted application can use an explicit
+local artifact path through `NFL_ANALYTICS_DASHBOARD_DATABASE`, a generic HTTPS
+artifact URL through `NFL_ANALYTICS_DASHBOARD_DATABASE_URL`, or a private
+GitHub Release asset. Remote artifacts are downloaded into the runtime cache
+and opened read-only.
+
+The recommended hosted configuration uses a private GitHub repository and a
+fine-grained, read-only token stored only in the hosting provider's secret
+manager:
+
+```text
+NFL_ANALYTICS_DASHBOARD_GITHUB_REPOSITORY=fefemu/nfl-analytics-platform-data
+NFL_ANALYTICS_DASHBOARD_GITHUB_TOKEN=<read-only fine-grained token>
+NFL_ANALYTICS_DASHBOARD_GITHUB_ASSET=dashboard.duckdb
+```
+
+At startup the application discovers the latest Release, downloads the named
+asset through the authenticated GitHub API and caches it by asset URL. Publishing
+a new Release therefore updates the hosted data without committing the database
+to the public source repository. Scope the token to the private data repository
+only, grant it read-only repository contents access and never commit it to Git.
 
 > **Publication warning:** do not attach `dashboard.duckdb` to a public GitHub
 > Release when it contains current bookmaker data or third-party source rows.
