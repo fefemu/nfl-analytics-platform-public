@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.streamlit-dashboard.*.log
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Virtual Environment
+.venv/
+venv/
+
+# Local Odds API snapshots
+data/raw/odds/*.json
+
+# Downloaded source data and local analytical database
+data/raw/schedules.parquet
+data/nfl_analytics.duckdb
+
+# Local NFL play-by-play datasets
+data/raw/pbp/*.parquet
+
+# Local NFL injury-report datasets
+data/raw/injuries/*.parquet
+
+# Local NFL depth-chart datasets
+data/raw/depth_charts/**/*.parquet
+
+# Local NFL player snap-count datasets
+data/raw/snap_counts/*.parquet
+
+# Local NFL player directory
+data/raw/players/*.parquet
+
+# Generated public dashboard database
+data/deployment/*.duckdb
+
+# VS Code
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

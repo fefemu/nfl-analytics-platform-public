@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1050" viewBox="0 0 1800 1050">
+ <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#0d1d34"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="5" stdDeviation="6" flood-opacity=".24"/></filter><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L0 6L9 3z" fill="#56b4ff"/></marker><style>.t{font:700 34px 'Segoe UI',Arial;fill:#f6f8fc}.sub{font:400 16px 'Segoe UI',Arial;fill:#8ea5c4}.phase{font:700 17px 'Segoe UI',Arial;fill:#3ee39f;letter-spacing:.8px}.h{font:700 15px 'Segoe UI',Arial;fill:#f6f8fc}.x{font:400 12px 'Segoe UI',Arial;fill:#c7d5e8}.n{font:400 11px 'Segoe UI',Arial;fill:#8ea5c4}.band{fill:#0d1d31;stroke:#29415f;stroke-width:2}.box{fill:#101f35;stroke:#355474;stroke-width:2}.start{fill:#12354a;stroke:#3ee39f;stroke-width:2}.gate{fill:#293047;stroke:#f7c948;stroke-width:2}.bad{fill:#3b2030;stroke:#ef5b67;stroke-width:2}.flow{fill:none;stroke:#56b4ff;stroke-width:3;marker-end:url(#a)}.fail{fill:none;stroke:#ef5b67;stroke-width:2.5;marker-end:url(#a)}</style></defs>
+ <rect width="1800" height="1050" fill="url(#bg)"/><g opacity=".07" stroke="#83a8cc"><path d="M0 100H1800M0 200H1800M0 300H1800M0 400H1800M0 500H1800M0 600H1800M0 700H1800M0 800H1800M0 900H1800M0 1000H1800"/></g>
+ <text x="55" y="58" class="t">Adatfrissítési folyamat</text><text x="55" y="88" class="sub">Három fázisban a frissítés indításától az új eredmények megjelenéséig</text>
+ <!-- PHASE 1 -->
+ <rect x="55" y="125" width="1690" height="225" rx="20" class="band"/><text x="85" y="160" class="phase">ADAT ÉS MODELLEZÉS</text>
+ <g filter="url(#s)"><rect x="85" y="185" width="270" height="120" rx="15" class="start"/><text x="110" y="222" class="h">1. Frissítés indítása</text><text x="110" y="250" class="x">Online API vagy lokális</text><text x="110" y="272" class="x">odds snapshot mód</text>
+ <rect x="420" y="185" width="270" height="120" rx="15" class="box"/><text x="445" y="222" class="h">2. Auditbejegyzés</text><text x="445" y="250" class="x">refresh_run_id</text><text x="445" y="272" class="x">státusz: RUNNING</text>
+ <rect x="755" y="170" width="550" height="150" rx="15" class="box"/><text x="780" y="207" class="h">3. Modellezési pipeline</text><text x="780" y="235" class="x">nfelo → team/QB/schedule/weather → injury/depth/snap</text><text x="780" y="257" class="x">→ modeling dataset/splits/governance → predictionök</text><text x="780" y="279" class="x">→ várt pontok → szezon-szimuláció</text><text x="780" y="301" class="n">A builderek validáció után commitolnak.</text>
+ <polygon points="1510,175 1615,245 1510,315 1405,245" class="gate"/><text x="1453" y="238" class="h">Modellezés</text><text x="1462" y="260" class="h">sikeres?</text></g>
+ <path d="M355 245H408" class="flow"/><path d="M690 245H743" class="flow"/><path d="M1305 245H1393" class="flow"/>
+ <!-- PHASE 2 -->
+ <rect x="55" y="390" width="1690" height="235" rx="20" class="band"/><text x="85" y="425" class="phase">PIAC ÉS PUBLIKÁLÁS</text>
+ <g filter="url(#s)"><rect x="85" y="455" width="500" height="125" rx="15" class="box"/><text x="110" y="492" class="h">4. Odds pipeline</text><text x="110" y="520" class="x">snapshot → RAW → processed → best odds → market board</text><text x="110" y="542" class="x">→ Moneyline / Spread / Total EV → combined betting board</text>
+ <polygon points="795,447 920,517 795,587 670,517" class="gate"/><text x="718" y="510" class="h">Piaci adatok és</text><text x="719" y="532" class="h">számítások rendben?</text>
+ <rect x="1005" y="455" width="360" height="125" rx="15" class="box"/><text x="1030" y="492" class="h">5. Forward archive</text><text x="1030" y="520" class="x">Kickoff előtti előrejelzések rögzítése</text><text x="1030" y="542" class="x">későbbi kiértékeléshez</text>
+ <rect x="1450" y="455" width="265" height="125" rx="15" class="start"/><text x="1475" y="492" class="h">6. Sikeres lezárás</text><text x="1475" y="520" class="x">státusz: SUCCESS</text><text x="1475" y="542" class="x">completed_at + row count</text></g>
+ <path d="M585 517H658" class="flow"/><path d="M920 517H993" class="flow"/><path d="M1365 517H1438" class="flow"/>
+ <!-- PHASE 3 -->
+ <rect x="55" y="665" width="1690" height="205" rx="20" class="band"/><text x="85" y="700" class="phase">KISZOLGÁLÁS</text>
+ <g filter="url(#s)"><rect x="205" y="730" width="360" height="100" rx="15" class="box"/><text x="230" y="766" class="h">7. Validált DuckDB-outputok</text><text x="230" y="794" class="x">prediction · betting · simulation táblák</text>
+ <rect x="720" y="730" width="360" height="100" rx="15" class="box"/><text x="745" y="766" class="h">8. Streamlit megjelenítés</text><text x="745" y="794" class="x">Read-only hozzáférés az új outputokhoz</text>
+ <rect x="1235" y="730" width="360" height="100" rx="15" class="start"/><text x="1260" y="766" class="h">9. Adatok frissítve</text><text x="1260" y="794" class="x">Legutóbbi sikeres output időpontja</text></g>
+ <path d="M565 780H708" class="flow"/><path d="M1080 780H1223" class="flow"/><path d="M1582 580V645H385V718" class="flow"/>
+ <!-- COMMON FAILURE -->
+ <g filter="url(#s)"><rect x="590" y="930" width="620" height="85" rx="16" class="bad"/><text x="620" y="965" class="h">Hibaág: futás megszakítása</text><text x="620" y="991" class="x">státusz: FAILED · hibaüzenet mentése · nincs Forward archive</text></g>
+ <path d="M1510 315V972H1222" class="fail"/><path d="M795 587V918" class="fail"/><text x="1523" y="349" class="n">nem</text><text x="808" y="620" class="n">nem</text><text x="1623" y="231" class="n">igen</text><path d="M1615 245H1665V370H335V443" class="flow"/>
+</svg>
