@@ -17,3 +17,5 @@ def test_ga4_component_disables_advertising_features_and_deduplicates_pages():
     assert "ad_storage: 'denied'" in html
     assert "allow_google_signals: false" in html
     assert "sessionStorage.getItem(storageKey)" in html
+    assert "document.referrer || window.location.href" in html
+    assert "window.parent.location.href" not in html

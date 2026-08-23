@@ -48,7 +48,7 @@ def build_ga4_component(page_key: str, language: str) -> str:
     sessionStorage.setItem(storageKey, pageKey);
     gtag('event', 'page_view', {{
       page_title: page,
-      page_location: window.parent.location.href,
+      page_location: document.referrer || window.location.href,
       page_path: '/' + page.toLowerCase(),
       dashboard_page: page,
       dashboard_language: language
