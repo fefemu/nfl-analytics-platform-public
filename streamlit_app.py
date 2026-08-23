@@ -2,7 +2,6 @@
 
 import streamlit as st
 
-from src.dashboard.analytics import render_analytics_consent, track_page_view
 from src.dashboard.components import (
     empty_state,
     inject_styles,
@@ -97,7 +96,6 @@ with st.sidebar:
     )
     selected = st.session_state.get("dashboard_page", selected)
     st.markdown("<div class='nap-divider'></div>", unsafe_allow_html=True)
-    analytics_consent = render_analytics_consent(language)
     state = tr(language, "data_ready") if health.ready else tr(language, "refresh_required")
     st.markdown(status_pill(state, health.ready), unsafe_allow_html=True)
     st.caption(tr(language, "responsible"))
@@ -111,7 +109,6 @@ with st.sidebar:
     )
 
 page_key = selected
-track_page_view(page_key, language, analytics_consent)
 page_title = tr(language, PAGES[selected][1])
 refresh_label = None
 if health.latest_refresh_at is not None:

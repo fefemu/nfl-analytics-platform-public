@@ -153,11 +153,13 @@ Store the web-stream Measurement ID in the hosting provider's secret manager:
 NFL_ANALYTICS_GA4_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
-The integration records the dashboard page and EN/HU language only after the
-visitor explicitly enables anonymous usage analytics in the sidebar. Google
-Signals, advertising storage and personalization remain disabled. Immediate
-Streamlit reruns on the same page are deduplicated. If the setting is absent or
-invalid, analytics stays disabled and the application continues normally.
+At process startup, `sitecustomize.py` injects a consent-aware tag into the
+outer Streamlit HTML shell. No Google tag loads before the visitor accepts the
+one-time analytics banner. The choice is persisted in browser local storage and
+can be changed through the small Privacy control. Google Signals, advertising
+storage and personalization remain disabled. Page and EN/HU language changes
+are tracked without counting same-page Streamlit reruns. If the setting is
+absent or invalid, analytics stays disabled and the application continues.
 
 The scheduled artifact refresh remains.
 
