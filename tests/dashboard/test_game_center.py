@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.dashboard.pages.game_center import _hero
+from src.dashboard.pages.game_center import _hero, _preferred_label
 
 
 def test_game_center_hero_contains_predictions_and_team_logos() -> None:
@@ -24,3 +24,12 @@ def test_game_center_hero_contains_predictions_and_team_logos() -> None:
     assert "24.1 – 27.4" in markup
     assert "HOME MARGIN" in markup
     assert markup.count("nap-team-logo") == 2
+
+
+def test_preferred_market_label_formats_spread_and_total() -> None:
+    assert _preferred_label(pd.Series({
+        "market_key": "spreads", "outcome_name": "BUF", "point": 3.5,
+    })) == "BUF +3.5"
+    assert _preferred_label(pd.Series({
+        "market_key": "totals", "outcome_name": "Under", "point": 47.5,
+    })) == "Under 47.5"

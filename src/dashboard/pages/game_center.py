@@ -10,9 +10,11 @@ from src.dashboard.components import empty_state, probability_bar, status_pill, 
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
     create_matchup_labels,
+    classify_publication_candidates,
+    format_decimal_odds,
     format_hungarian_kickoff,
-    market_display,
     prepare_forward_candidates,
+    select_preferred_market_sides,
 )
 
 
@@ -87,19 +89,91 @@ def _render_market(
             if language == "EN" else "Nincs párosított aktuális bookmaker ajánlat a kiválasztott meccshez.",
         )
         return
-    rows = rows.sort_values("expected_value_percent", ascending=False).head(9)
-    rendered = ['<div class="nap-card"><div class="nap-panel-title">Best current market comparisons</div>']
-    for _, offer in rows.iterrows():
-        rendered.append(
-            '<div class="nap-market-row">'
-            f'<b>{escape(market_display(offer))}</b>'
-            f'<span>Model {offer["model_probability"]:.1%}</span>'
-            f'<span>Edge {offer["probability_edge_percentage_points"]:+.1f} pp</span>'
-            f'<span>{escape(str(offer["best_bookmaker_title"]))} · {int(offer["best_american_price"]):+d}</span>'
-            '</div>'
-        )
-    rendered.append('</div>')
-    st.markdown("".join(rendered), unsafe_allow_html=True)
+    preferred = select_preferred_market_sides(rows)
+    classified = classify_publication_candidates(preferred)
+    title = "Piaci értékelés" if language == "HU" else "Market assessment"
+    explanation = (
+        "A modell által preferált oldal markettípusonként, összevetve az aktuális "
+        "fogadóirodai árazással. A modell által valószínűbbnek tartott kimenetel "
+        "nem feltétlenül jelent fogadási value-t."
+        if language == "HU" else
+        "The model-preferred side in each market, compared with current bookmaker pricing. "
+        "The more likely model outcome is not necessarily a value bet."
+    )
+    st.markdown(f"#### {title}")
+    st.caption(explanation)
+    market_labels = {"h2h": "MONEYLINE", "spreads": "SPREAD", "totals": "TOTAL"}
+    by_market = {row["market_key"]: row for _, row in classified.iterrows()}
+    columns = st.columns(3)
+    for column, market_key in zip(columns, ("h2h", "spreads", "totals"), strict=True):
+        with column:
+            if market_key not in by_market:
+                missing_text = "Nincs elérhető piaci adat" if language == "HU" else "Market data unavailable"
+                st.markdown(
+                    f'<div class="nap-card"><div class="nap-panel-title">{market_labels[market_key]}</div>'
+                    f'<div class="nap-muted">{missing_text}</div></div>',
+                    unsafe_allow_html=True,
+                )
+                continue
+            offer = by_market[market_key]
+            edge = float(offer["probability_edge_percentage_points"])
+            if bool(offer["publication_eligible"]):
+                status = "VALUE"
+                status_class = "nap-positive"
+            elif edge > 0:
+                status = "KIS ELŐNY" if language == "HU" else "SMALL EDGE"
+                status_class = ""
+            else:
+                status = "NINCS VALUE" if language == "HU" else "NO VALUE"
+                status_class = "nap-negative"
+            model_help = (
+                "A modell által becsült valószínűség az adott kimenetelre."
+                if language == "HU" else "The model-estimated probability of this outcome."
+            )
+            market_help = (
+                "A fogadóirodai margintól megtisztított piaci valószínűség."
+                if language == "HU" else "The market probability after removing bookmaker margin."
+            )
+            edge_help = (
+                "A modell és a no-vig piaci valószínűség különbsége százalékpontban."
+                if language == "HU" else "Model probability minus no-vig market probability, in percentage points."
+            )
+            odds_help = (
+                "Az adott kimenetelhez jelenleg elérhető legjobb ár a betöltött fogadóirodák között."
+                if language == "HU" else "The best currently available price among loaded bookmakers."
+            )
+            odds = format_decimal_odds(offer["best_decimal_odds"], language)
+            card = (
+                '<div class="nap-card">'
+                f'<div class="nap-panel-title">{market_labels[market_key]}</div>'
+                f'<div class="nap-candidate-market">{escape(_preferred_label(offer))}</div>'
+                '<div class="nap-divider"></div>'
+                f'<div title="{escape(model_help)}">{"Modell" if language == "HU" else "Model"} ⓘ <b>{offer["model_probability"]:.1%}</b></div>'
+                f'<div title="{escape(market_help)}">{"Piac" if language == "HU" else "Market"} ⓘ <b>{offer["market_probability"]:.1%}</b></div>'
+                f'<div title="{escape(edge_help)}">Edge ⓘ <b>{edge:+.1f} pp</b></div>'
+                f'<div title="{escape(odds_help)}">{"Legjobb odds" if language == "HU" else "Best odds"} ⓘ <b>{odds}</b></div>'
+                f'<div class="nap-muted">{escape(str(offer["best_bookmaker_title"]))}</div>'
+                f'<div class="nap-divider"></div><b class="{status_class}">{status}</b>'
+                '</div>'
+            )
+            st.markdown(card, unsafe_allow_html=True)
+    st.caption(
+        "A pozitív Edge nem garantált profitot jelent."
+        if language == "HU" else "A positive Edge does not guarantee profit."
+    )
+
+
+def _preferred_label(offer: pd.Series) -> str:
+    """Format one already selected model-preferred market side."""
+
+    market_key = str(offer["market_key"])
+    outcome = str(offer["outcome_name"])
+    point = offer.get("point")
+    if market_key == "h2h" or pd.isna(point):
+        return outcome
+    if market_key == "spreads":
+        return f"{outcome} {float(point):+g}"
+    return f"{outcome} {float(point):g}"
 
 
 def render_game_center(
@@ -144,7 +218,6 @@ def render_game_center(
         st.markdown(f"### {tr(language, 'why_model')}")
         _render_narrative(row, language)
     with right:
-        st.markdown(f"### {tr(language, 'market_comparison')}")
         _render_market(game_id, market_board, language)
 
     with st.expander(tr(language, "technical_routing")):

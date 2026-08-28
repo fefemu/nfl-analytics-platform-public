@@ -1,5 +1,6 @@
 """Pure, tested transformations from analytics outputs to public UI rows."""
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -9,6 +10,21 @@ import pandas as pd
 
 NFL_SCHEDULE_TIMEZONE = ZoneInfo("America/New_York")
 HUNGARIAN_TIMEZONE = ZoneInfo("Europe/Budapest")
+
+
+@dataclass(frozen=True)
+class TopPickCriteria:
+    """Single source of truth for public Top pick selection."""
+
+    minimum_edge_percentage_points: float = 3.0
+    minimum_expected_value_percent: float = 0.0
+    minimum_model_probability: float = 0.50
+    minimum_bookmakers: int = 5
+    maximum_edge_percentage_points: float = 10.0
+    maximum_expected_value_percent: float = 20.0
+
+
+TOP_PICK_CRITERIA = TopPickCriteria()
 
 
 def hungarian_kickoff_timestamp(
@@ -136,12 +152,9 @@ def select_best_candidates(
 
 def classify_publication_candidates(
     board: pd.DataFrame,
-    minimum_bookmakers: int = 5,
-    minimum_model_probability: float = 0.50,
-    maximum_edge_percentage_points: float = 10.0,
-    maximum_expected_value_percent: float = 20.0,
+    criteria: TopPickCriteria = TOP_PICK_CRITERIA,
 ) -> pd.DataFrame:
-    """Separate publishable picks from unusually large research signals."""
+    """Flag candidates that satisfy the complete public Top pick rule."""
 
     required = {
         "bookmaker_count", "model_probability",
@@ -155,15 +168,97 @@ def classify_publication_candidates(
     result = board.copy()
     result["publication_eligible"] = (
         result["positive_expected_value"].astype(bool)
-        & result["bookmaker_count"].ge(minimum_bookmakers)
-        & result["model_probability"].ge(minimum_model_probability)
-        & result["probability_edge_percentage_points"].le(maximum_edge_percentage_points)
-        & result["expected_value_percent"].le(maximum_expected_value_percent)
+        & result["bookmaker_count"].ge(criteria.minimum_bookmakers)
+        & result["model_probability"].ge(criteria.minimum_model_probability)
+        & result["probability_edge_percentage_points"].ge(
+            criteria.minimum_edge_percentage_points
+        )
+        & result["expected_value_percent"].ge(
+            criteria.minimum_expected_value_percent
+        )
+        & result["probability_edge_percentage_points"].le(
+            criteria.maximum_edge_percentage_points
+        )
+        & result["expected_value_percent"].le(
+            criteria.maximum_expected_value_percent
+        )
     )
     result["publication_status"] = np.where(
-        result["publication_eligible"], "TOP_PICK", "RESEARCH_SIGNAL"
+        result["publication_eligible"], "TOP_PICK", "NOT_SELECTED"
     )
     return result
+
+
+def top_pick_criteria_text(language: str) -> str:
+    """Describe the live criteria from the same object used for selection."""
+
+    criteria = TOP_PICK_CRITERIA
+    probability = criteria.minimum_model_probability * 100.0
+    if language == "HU":
+        return (
+            f"Aktuális feltételek: legalább {probability:.0f}% modellvalószínűség, "
+            f"{criteria.minimum_edge_percentage_points:g}–"
+            f"{criteria.maximum_edge_percentage_points:g} pp Edge, "
+            f"{criteria.minimum_expected_value_percent:g}–"
+            f"{criteria.maximum_expected_value_percent:g}% EV és legalább "
+            f"{criteria.minimum_bookmakers} fogadóiroda."
+        )
+    return (
+        f"Current criteria: at least {probability:.0f}% model probability, "
+        f"{criteria.minimum_edge_percentage_points:g}–"
+        f"{criteria.maximum_edge_percentage_points:g} pp Edge, "
+        f"{criteria.minimum_expected_value_percent:g}–"
+        f"{criteria.maximum_expected_value_percent:g}% EV and at least "
+        f"{criteria.minimum_bookmakers} bookmakers."
+    )
+
+
+def select_preferred_market_sides(board: pd.DataFrame) -> pd.DataFrame:
+    """Select one model-preferred side for each market using a liquid line."""
+
+    required = {
+        "market_key", "point", "model_probability", "bookmaker_count",
+        "probability_edge_percentage_points", "expected_value_percent",
+    }
+    missing = sorted(required - set(board.columns))
+    if missing:
+        raise ValueError("Market preferences are missing columns: " + ", ".join(missing))
+    selected: list[pd.Series] = []
+    for market_key in ("h2h", "spreads", "totals"):
+        market = board.loc[board["market_key"] == market_key].copy()
+        if market.empty:
+            continue
+        if market_key == "spreads":
+            market["_line_group"] = pd.to_numeric(
+                market["point"], errors="coerce"
+            ).abs().round(6)
+        elif market_key == "totals":
+            market["_line_group"] = pd.to_numeric(
+                market["point"], errors="coerce"
+            ).round(6)
+        else:
+            market["_line_group"] = "moneyline"
+        liquidity = (
+            market.groupby("_line_group", dropna=False)["bookmaker_count"]
+            .max()
+            .sort_values(ascending=False, kind="stable")
+        )
+        canonical_line = liquidity.index[0]
+        line = market.loc[market["_line_group"] == canonical_line].copy()
+        line = line.sort_values(
+            ["model_probability", "bookmaker_count"],
+            ascending=[False, False],
+            kind="stable",
+        )
+        preferred = line.iloc[0].copy()
+        preferred["market_probability"] = (
+            float(preferred["model_probability"])
+            - float(preferred["probability_edge_percentage_points"]) / 100.0
+        )
+        selected.append(preferred)
+    if not selected:
+        return board.iloc[0:0].copy()
+    return pd.DataFrame(selected).reset_index(drop=True)
 
 
 def select_next_betting_week(board: pd.DataFrame) -> tuple[int | None, pd.DataFrame]:

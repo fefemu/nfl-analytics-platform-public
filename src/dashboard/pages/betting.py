@@ -9,6 +9,7 @@ import streamlit as st
 from src.dashboard.components import empty_state, team_badge
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
+    TOP_PICK_CRITERIA,
     classify_publication_candidates,
     format_decimal_odds,
     format_utc_timestamp_in_hungary,
@@ -16,6 +17,7 @@ from src.dashboard.view_models import (
     prepare_forward_candidates,
     select_best_candidates,
     select_next_betting_week,
+    top_pick_criteria_text,
 )
 
 
@@ -169,15 +171,15 @@ def render_betting_board(
     with first_row[1]:
         matchup_label = st.selectbox("Mérkőzés" if language == "HU" else "Matchup", (all_matchups, *matchups))
     with first_row[2]:
-        minimum_edge = st.number_input("Minimum Edge (pp)", min_value=0.0, value=3.0, step=1.0)
+        minimum_edge = st.number_input("Minimum Edge (pp)", min_value=0.0, value=TOP_PICK_CRITERIA.minimum_edge_percentage_points, step=1.0)
     with first_row[3]:
-        minimum_ev = st.number_input("Minimum EV (%)", min_value=0.0, value=0.0, step=1.0)
+        minimum_ev = st.number_input("Minimum EV (%)", min_value=0.0, value=TOP_PICK_CRITERIA.minimum_expected_value_percent, step=1.0)
 
     second_row = st.columns([1, 1, 2])
     with second_row[0]:
         minimum_model_probability = st.number_input(
             "Minimum modellvalószínűség (%)" if language == "HU" else "Minimum model probability (%)",
-            min_value=0.0, max_value=100.0, value=50.0, step=5.0,
+            min_value=0.0, max_value=100.0, value=TOP_PICK_CRITERIA.minimum_model_probability * 100.0, step=5.0,
             help=(
                 "Alapértelmezésben csak olyan kimenetelek jelennek meg, amelyeket a modell legalább 50%-ban valószínűnek tart."
                 if language == "HU" else
@@ -187,7 +189,7 @@ def render_betting_board(
     with second_row[1]:
         minimum_books = st.number_input(
             "Irodák minimális száma" if language == "HU" else "Minimum bookmakers",
-            min_value=1, value=5, step=1,
+            min_value=1, value=TOP_PICK_CRITERIA.minimum_bookmakers, step=1,
             help=(
                 "Az adott piac összehasonlításához felhasznált fogadóirodák minimális száma."
                 if language == "HU" else
@@ -209,16 +211,12 @@ def render_betting_board(
         classified.loc[classified["publication_eligible"]],
         positive_only=True,
     )
-    research_count = int((~classified["publication_eligible"]).sum())
-
     st.caption(
         (
-            f"Következő hét: **{next_week}. hét** · {len(cards)} Top tipp {len(filtered)} megfelelő ajánlatból. "
-            f"{research_count} szélsőséges eltérés csak kutatási jelzésként látható. "
+            f"Következő hét: **{next_week}. hét** · {len(cards)} Top tipp. "
             "Csak a következő aktuális hét, kezdés előtt rögzített oddsai jelennek meg."
         ) if language == "HU" else (
-            f"Week {next_week} · {len(cards)} Top picks from {len(filtered)} eligible offers. "
-            f"{research_count} extreme gaps remain visible as research signals only. "
+            f"Week {next_week} · {len(cards)} Top picks. "
             "Only pre-kickoff odds for the next upcoming week are shown."
         )
     )
@@ -233,9 +231,9 @@ def render_betting_board(
 
     if cards.empty:
         st.info(
-            "A jelenlegi szűréssel nincs publikálható Top tipp; a szélsőséges eltérések lent kutatási jelzésként megmaradnak."
+            "A jelenlegi piacon nincs a kiválasztási feltételeknek megfelelő jelzés."
             if language == "HU" else
-            "No publishable Top picks match the filters; extreme gaps remain below as research signals."
+            "The current market has no signals matching the selection criteria."
         )
 
     st.subheader("Top tippek" if language == "HU" else "Top picks")
@@ -252,17 +250,31 @@ def render_betting_board(
                     )
 
     st.markdown("### " + ("Részletes piaci adatok" if language == "HU" else "Detailed market data"))
-    detail = select_best_candidates(classified, positive_only=True)
-    detail["status"] = detail["publication_status"].map({
-        "TOP_PICK": "Top tipp" if language == "HU" else "Top pick",
-        "RESEARCH_SIGNAL": "Kutatási jelzés" if language == "HU" else "Research signal",
-    })
+    detail_help = (
+        "Csak a platform kiválasztási feltételeinek megfelelő piaci jelzések jelennek meg. "
+        "A szűrés a modell becsült valószínűsége, a piachoz képesti eltérés (Edge), "
+        "a várható érték (EV), valamint az elérhető odds- és bookmakeradatok alapján történik. "
+        if language == "HU" else
+        "Only market signals satisfying the platform selection criteria are shown. Selection uses "
+        "model probability, Edge, EV and available odds and bookmaker data. "
+    ) + top_pick_criteria_text(language)
+    st.caption("ⓘ " + detail_help)
+    detail = select_best_candidates(
+        classified.loc[classified["publication_eligible"]], positive_only=True
+    )
+    if detail.empty:
+        st.info(
+            "A jelenlegi piacon nincs a kiválasztási feltételeknek megfelelő jelzés."
+            if language == "HU" else
+            "The current market has no signals matching the selection criteria."
+        )
+        return
     detail["matchup"] = detail["away_team"] + " @ " + detail["home_team"]
     detail["market"] = detail.apply(market_display, axis=1)
     detail["decimal_odds"] = detail["best_decimal_odds"].map(lambda value: format_decimal_odds(value, language))
     st.dataframe(
         detail[["matchup", "market", "model_probability", "probability_edge_percentage_points",
-                "expected_value_percent", "decimal_odds", "best_bookmaker_title", "bookmaker_count", "status"]],
+                "expected_value_percent", "decimal_odds", "best_bookmaker_title", "bookmaker_count"]],
         width="stretch",
         hide_index=True,
         column_config={
@@ -291,14 +303,6 @@ def render_betting_board(
             "bookmaker_count": st.column_config.NumberColumn(
                 "Irodák száma" if language == "HU" else "Bookmakers", format="%d",
                 help=("Az összehasonlításhoz felhasznált fogadóirodák száma." if language == "HU" else "Number of bookmakers used for the comparison."),
-            ),
-            "status": st.column_config.TextColumn(
-                "Státusz" if language == "HU" else "Status",
-                help=(
-                    "A Top tipp megfelel a publikálási guardrailnek. A kutatási jelzés szokatlanul nagy modell–piac eltérés, amelyet a történeti eredmények nem igazolnak kiemelt tippként."
-                    if language == "HU" else
-                    "Top picks pass the publication guardrail. Research signals are unusually large model-market gaps not supported as featured picks by historical results."
-                ),
             ),
         },
     )

@@ -16,6 +16,7 @@ from src.dashboard.view_models import (
     prepare_simulation_standings,
     select_best_candidates,
     select_current_week,
+    select_preferred_market_sides,
     select_next_betting_week,
     select_weekly_highlights,
 )
@@ -68,7 +69,46 @@ def test_publication_guardrail_separates_extreme_signal() -> None:
 
     result = classify_publication_candidates(data)
 
-    assert result["publication_status"].tolist() == ["TOP_PICK", "RESEARCH_SIGNAL"]
+    assert result["publication_status"].tolist() == ["TOP_PICK", "NOT_SELECTED"]
+
+
+def test_publication_rule_includes_minimum_edge() -> None:
+    data = create_board().iloc[[0]].copy()
+    data.loc[:, "bookmaker_count"] = 6
+    data.loc[:, "model_probability"] = 0.60
+    data.loc[:, "probability_edge_percentage_points"] = 2.9
+    data.loc[:, "expected_value_percent"] = 5.0
+
+    result = classify_publication_candidates(data)
+
+    assert not bool(result.iloc[0]["publication_eligible"])
+
+
+def test_market_preferences_use_liquid_line_then_model_probability() -> None:
+    base = create_board().iloc[0].to_dict()
+    rows = []
+    for outcome, point, probability, books, edge in (
+        ("KC", -3.5, 0.58, 8, -2.0),
+        ("BUF", 3.5, 0.42, 8, 5.0),
+        ("KC", -4.5, 0.49, 3, 9.0),
+        ("BUF", 4.5, 0.51, 3, 9.0),
+    ):
+        row = base.copy()
+        row.update({
+            "market_key": "spreads", "market_name": "Spread",
+            "outcome_name": outcome, "point": point,
+            "model_probability": probability, "bookmaker_count": books,
+            "probability_edge_percentage_points": edge,
+            "expected_value_percent": 5.0,
+        })
+        rows.append(row)
+
+    result = select_preferred_market_sides(pd.DataFrame(rows))
+
+    assert len(result) == 1
+    assert result.iloc[0]["outcome_name"] == "KC"
+    assert result.iloc[0]["point"] == -3.5
+    assert result.iloc[0]["market_probability"] == pytest.approx(0.60)
 
 
 def test_select_next_betting_week_uses_earliest_future_kickoff() -> None:
@@ -122,7 +162,6 @@ def test_create_matchup_labels_is_stable_and_readable() -> None:
     assert create_matchup_labels(games) == {
         "Week 1 · BUF @ KC · 2026-09-11 · 02:00 CEST": "2026_01_BUF_KC"
     }
-
 
 def test_nflverse_schedule_time_converts_to_hungarian_next_day() -> None:
     assert format_hungarian_kickoff("2026-09-10", "20:20") == (
