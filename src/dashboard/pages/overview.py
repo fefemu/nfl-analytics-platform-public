@@ -22,15 +22,12 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
     )
     week_label = f"{int(row['week'])}. HÉT" if language == "HU" else f"WEEK {int(row['week'])}"
     score_label = "Várt eredmény" if language == "HU" else "Expected score"
-    details = "Meccs részletei" if language == "HU" else "Matchup details"
     away_score = _localized_number(row["implied_away_score"], language)
     home_score = _localized_number(row["implied_home_score"], language)
     spread = _localized_number(row["predicted_home_margin"], language)
     total = _localized_number(row["predicted_total_points"], language)
     spread = f"+{spread}" if float(row["predicted_home_margin"]) >= 0 else spread
     return f"""
-    <a class="nap-matchup-link" target="_self"
-       href="?language={language}&amp;page=GAMES&amp;game_id={row['game_id']}">
     <div class="nap-card nap-matchup-card">
       <div class="nap-matchup-meta">{week_label} · {kickoff}</div>
       <div class="nap-matchup-line">
@@ -40,9 +37,17 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
       </div>
       <div class="nap-scoreline">{score_label} <b>{away_score} – {home_score}</b>
       <span>Spread {spread} · Total {total}</span></div>
-      <div class="nap-matchup-action">{details} →</div>
-    </div></a>
+    </div>
     """
+
+
+def _open_game_center(game_id: str, language: Language) -> None:
+    """Navigate internally without replacing the Streamlit browser session."""
+
+    st.session_state["dashboard_page"] = "GAMES"
+    st.session_state[f"dashboard_page_selector_{language}"] = "GAMES"
+    st.session_state["dashboard_selected_game_id"] = str(game_id)
+    st.query_params.from_dict({"language": language, "page": "GAMES"})
 
 
 def render_weekly_overview(
@@ -121,4 +126,12 @@ def render_weekly_overview(
                     st.markdown(
                         _matchup_card(week_games.iloc[index], language),
                         unsafe_allow_html=True,
+                    )
+                    game_id = str(week_games.iloc[index]["game_id"])
+                    st.button(
+                        "Meccs részletei →" if language == "HU" else "Matchup details →",
+                        key=f"overview_game_{game_id}",
+                        on_click=_open_game_center,
+                        args=(game_id, language),
+                        use_container_width=True,
                     )
