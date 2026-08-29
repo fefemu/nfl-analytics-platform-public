@@ -29,7 +29,8 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
     total = _localized_number(row["predicted_total_points"], language)
     spread = f"+{spread}" if float(row["predicted_home_margin"]) >= 0 else spread
     return f"""
-    <a class="nap-matchup-link" href="?page=GAMES&amp;game_id={row['game_id']}">
+    <a class="nap-matchup-link" target="_self"
+       href="?language={language}&amp;page=GAMES&amp;game_id={row['game_id']}">
     <div class="nap-card nap-matchup-card">
       <div class="nap-matchup-meta">{week_label} · {kickoff}</div>
       <div class="nap-matchup-line">

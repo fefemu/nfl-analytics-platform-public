@@ -21,7 +21,8 @@ def test_hungarian_matchup_card_is_localized_and_links_to_game_center() -> None:
 
     markup = _matchup_card(row, "HU")
 
-    assert "?page=GAMES&amp;game_id=2026_01_BUF_KC" in markup
+    assert "?language=HU&amp;page=GAMES&amp;game_id=2026_01_BUF_KC" in markup
+    assert 'target="_self"' in markup
     assert "1. HÉT · 2026.09.11. · 02:20" in markup
     assert "Várt eredmény" in markup
     assert "22,6 – 26,7" in markup
