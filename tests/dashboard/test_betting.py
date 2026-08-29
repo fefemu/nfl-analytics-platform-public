@@ -19,8 +19,7 @@ def test_hungarian_candidate_card_uses_decimal_odds_without_routing_label() -> N
     markup = _candidate_card(create_candidate(), "HU")
 
     assert "Book A · 2,10" in markup
-    assert "Modell ⓘ" in markup
-    assert "100 egységnyi" in markup
+    assert "Modell esélye ⓘ" in markup
     assert "FALLBACK" not in markup
     assert "PRIMARY" not in markup
 
@@ -31,9 +30,9 @@ def test_candidate_filters_apply_market_threshold_and_matchup() -> None:
     second["away_team"] = "DAL"
     second["home_team"] = "NYG"
     second["probability_edge_percentage_points"] = 2.0
+    first["bookmaker_count"] = 5
     board = pd.DataFrame([first, second])
-
-    result = _filter_candidates(board, "h2h", "BUF @ KC", 3.0, 5.0, 50.0, 2)
+    result = _filter_candidates(board, "h2h", "BUF @ KC")
 
     assert len(result) == 1
     assert result.iloc[0]["game_id"] == "2026_01_BUF_KC"

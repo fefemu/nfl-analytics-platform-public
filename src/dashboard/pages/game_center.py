@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
 
-from src.dashboard.components import empty_state, probability_bar, status_pill, team_badge
+from src.dashboard.components import empty_state, probability_bar, team_badge
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
     create_matchup_labels,
@@ -18,22 +18,26 @@ from src.dashboard.view_models import (
 )
 
 
-def _hero(row: pd.Series) -> str:
+def _hero(row: pd.Series, language: Language = DEFAULT_LANGUAGE) -> str:
     away = str(row["away_team"])
     home = str(row["home_team"])
     kickoff = format_hungarian_kickoff(row["gameday"], row["gametime"])
+    week_label = f"{int(row['week'])}. HÉT" if language == "HU" else f"WEEK {int(row['week'])}"
+    score_label = "VÁRHATÓ EREDMÉNY" if language == "HU" else "MODEL SCORE"
+    margin_label = "VÁRHATÓ KÜLÖNBSÉG" if language == "HU" else "HOME MARGIN"
+    total_label = "VÁRHATÓ ÖSSZPONTSZÁM" if language == "HU" else "MODEL TOTAL"
     return f"""
     <div class="nap-card nap-game-hero">
       <div class="nap-game-teams">
         <div class="nap-game-team">{team_badge(away, 58)}<span>{away}</span></div>
-        <div class="nap-game-context">WEEK {int(row['week'])}<br>{kickoff}</div>
+        <div class="nap-game-context">{week_label}<br>{kickoff}</div>
         <div class="nap-game-team home"><span>{home}</span>{team_badge(home, 58)}</div>
       </div>
       {probability_bar(away, row['away_win_probability'], home, row['home_win_probability'])}
       <div class="nap-prediction-grid">
-        <div class="nap-prediction-tile"><span>MODEL SCORE</span><b>{row['implied_away_score']:.1f} – {row['implied_home_score']:.1f}</b></div>
-        <div class="nap-prediction-tile"><span>HOME MARGIN</span><b>{row['predicted_home_margin']:+.1f}</b></div>
-        <div class="nap-prediction-tile"><span>MODEL TOTAL</span><b>{row['predicted_total_points']:.1f}</b></div>
+        <div class="nap-prediction-tile"><span>{score_label}</span><b>{row['implied_away_score']:.1f} – {row['implied_home_score']:.1f}</b></div>
+        <div class="nap-prediction-tile"><span>{margin_label}</span><b>{row['predicted_home_margin']:+.1f}</b></div>
+        <div class="nap-prediction-tile"><span>{total_label}</span><b>{row['predicted_total_points']:.1f}</b></div>
       </div>
     </div>
     """
@@ -50,16 +54,28 @@ def _render_narrative(row: pd.Series, language: Language) -> None:
         return
     suffix = "hu" if language == "HU" else "en"
     headline = escape(str(row.get(f"headline_{suffix}", "")))
-    summary = escape(str(row.get(f"summary_{suffix}", "")))
-    context = escape(str(row.get(f"model_context_{suffix}", "")))
-    factor = row.get(f"top_factor_{suffix}")
-    factor_html = ""
-    if pd.notna(factor):
-        factor_html = f'<div class="nap-muted"><b>Top factor:</b> {escape(str(factor))}</div>'
+    favourite = str(row["home_team"] if row["home_win_probability"] >= 0.5 else row["away_team"])
+    summary = (
+        f"A jelenleg elérhető csapat-, irányító- és teljesítményadatok alapján "
+        f"a modell {escape(favourite)} csapatát tartja esélyesebbnek."
+        if language == "HU" else
+        f"Based on the currently available team, quarterback and performance data, "
+        f"the model considers {escape(favourite)} more likely to win."
+    )
+    is_fallback = "FALLBACK" in str(row.get("probability_prediction_mode", "")).upper()
+    context = (
+        "Egyes aktuális adatok még hiányosak, ezért a becslés a platform validált tartalékmodelljét használja."
+        if language == "HU" else
+        "Some current inputs are incomplete, so this estimate uses the platform's validated fallback model."
+    ) if is_fallback else (
+        "A becslés a platform aktuális, validált győzelmi modelljéből származik."
+        if language == "HU" else
+        "This estimate comes from the platform's current validated win-probability model."
+    )
     st.markdown(
         f'<div class="nap-card"><div class="nap-panel-title">{headline}</div>'
         f'<div class="nap-narrative">{summary}</div><div class="nap-divider"></div>'
-        f'<div class="nap-muted">{context}</div>{factor_html}</div>',
+        f'<div class="nap-muted">{context}</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -93,9 +109,9 @@ def _render_market(
     classified = classify_publication_candidates(preferred)
     title = "Piaci értékelés" if language == "HU" else "Market assessment"
     explanation = (
-        "A modell által preferált oldal markettípusonként, összevetve az aktuális "
-        "fogadóirodai árazással. A modell által valószínűbbnek tartott kimenetel "
-        "nem feltétlenül jelent fogadási value-t."
+        "A modell becslése és a fogadóirodák aktuális árazásának összehasonlítása. "
+        "A pozitív Edge azt jelzi, hogy a modell nagyobb esélyt ad az adott "
+        "kimenetelnek, mint a piac."
         if language == "HU" else
         "The model-preferred side in each market, compared with current bookmaker pricing. "
         "The more likely model outcome is not necessarily a value bet."
@@ -117,14 +133,14 @@ def _render_market(
                 continue
             offer = by_market[market_key]
             edge = float(offer["probability_edge_percentage_points"])
-            if bool(offer["publication_eligible"]):
-                status = "VALUE"
+            if edge > 0:
+                status = (
+                    f"Pozitív modell-előny {edge:+.1f} pp"
+                    if language == "HU" else f"Positive model edge {edge:+.1f} pp"
+                )
                 status_class = "nap-positive"
-            elif edge > 0:
-                status = "KIS ELŐNY" if language == "HU" else "SMALL EDGE"
-                status_class = ""
             else:
-                status = "NINCS VALUE" if language == "HU" else "NO VALUE"
+                status = "Nincs modell-előny" if language == "HU" else "No model edge"
                 status_class = "nap-negative"
             model_help = (
                 "A modell által becsült valószínűség az adott kimenetelre."
@@ -143,14 +159,22 @@ def _render_market(
                 if language == "HU" else "The best currently available price among loaded bookmakers."
             )
             odds = format_decimal_odds(offer["best_decimal_odds"], language)
+            model_probability = f'{offer["model_probability"]:.1%}'
+            market_probability = f'{offer["market_probability"]:.1%}'
+            edge_text = f"{edge:+.1f} pp"
+            if language == "HU":
+                model_probability = model_probability.replace(".", ",")
+                market_probability = market_probability.replace(".", ",")
+                edge_text = edge_text.replace(".", ",").replace("-", "−")
+                status = status.replace(".", ",").replace("-", "−")
             card = (
                 '<div class="nap-card">'
                 f'<div class="nap-panel-title">{market_labels[market_key]}</div>'
                 f'<div class="nap-candidate-market">{escape(_preferred_label(offer))}</div>'
                 '<div class="nap-divider"></div>'
-                f'<div title="{escape(model_help)}">{"Modell" if language == "HU" else "Model"} ⓘ <b>{offer["model_probability"]:.1%}</b></div>'
-                f'<div title="{escape(market_help)}">{"Piac" if language == "HU" else "Market"} ⓘ <b>{offer["market_probability"]:.1%}</b></div>'
-                f'<div title="{escape(edge_help)}">Edge ⓘ <b>{edge:+.1f} pp</b></div>'
+                f'<div title="{escape(model_help)}">{"Modell esélye" if language == "HU" else "Model probability"} ⓘ <b>{model_probability}</b></div>'
+                f'<div title="{escape(market_help)}">{"Piaci esély" if language == "HU" else "Market probability"} ⓘ <b>{market_probability}</b></div>'
+                f'<div title="{escape(edge_help)}">Edge ⓘ <b>{edge_text}</b></div>'
                 f'<div title="{escape(odds_help)}">{"Legjobb odds" if language == "HU" else "Best odds"} ⓘ <b>{odds}</b></div>'
                 f'<div class="nap-muted">{escape(str(offer["best_bookmaker_title"]))}</div>'
                 f'<div class="nap-divider"></div><b class="{status_class}">{status}</b>'
@@ -158,7 +182,7 @@ def _render_market(
             )
             st.markdown(card, unsafe_allow_html=True)
     st.caption(
-        "A pozitív Edge nem garantált profitot jelent."
+        "A pozitív Edge nem jelent garantált nyereséget."
         if language == "HU" else "A positive Edge does not guarantee profit."
     )
 
@@ -203,15 +227,7 @@ def render_game_center(
     )
     game_id = labels[selected_label]
     row = games.loc[games["game_id"].astype(str) == game_id].iloc[0]
-    st.markdown(_hero(row), unsafe_allow_html=True)
-
-    probability_fallback = "FALLBACK" in str(row.get("probability_prediction_mode", "")).upper()
-    spread_fallback = "FALLBACK" in str(row.get("spread_prediction_mode", "")).upper()
-    totals_fallback = "FALLBACK" in str(row.get("totals_prediction_mode", "")).upper()
-    modes = st.columns(3)
-    modes[0].markdown(status_pill("PROBABILITY FALLBACK" if probability_fallback else "PROBABILITY PRIMARY", not probability_fallback), unsafe_allow_html=True)
-    modes[1].markdown(status_pill("SPREAD FALLBACK" if spread_fallback else "SPREAD PRIMARY", not spread_fallback), unsafe_allow_html=True)
-    modes[2].markdown(status_pill("TOTALS FALLBACK" if totals_fallback else "TOTALS PRIMARY", not totals_fallback), unsafe_allow_html=True)
+    st.markdown(_hero(row, language), unsafe_allow_html=True)
 
     left, right = st.columns([1, 1])
     with left:
@@ -219,12 +235,3 @@ def render_game_center(
         _render_narrative(row, language)
     with right:
         _render_market(game_id, market_board, language)
-
-    with st.expander(tr(language, "technical_routing")):
-        st.json({
-            "game_id": game_id,
-            "probability_model": str(row.get("probability_model_name", "Unavailable")),
-            "probability_mode": str(row.get("probability_prediction_mode", "Unavailable")),
-            "spread_mode": str(row.get("spread_prediction_mode", "Unavailable")),
-            "totals_mode": str(row.get("totals_prediction_mode", "Unavailable")),
-        })

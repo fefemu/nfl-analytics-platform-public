@@ -45,7 +45,7 @@ COPY: dict[str, dict[Language, str]] = {
     "highest_total": {"EN": "Highest model total", "HU": "Legmagasabb várt Total"},
     "matchups": {"EN": "Matchups", "HU": "Meccsek"},
     "select_matchup": {"EN": "Select matchup", "HU": "Válassz meccset"},
-    "why_model": {"EN": "Why the model leans this way", "HU": "Miért hajlik erre a model?"},
+    "why_model": {"EN": "What drives the model's prediction?", "HU": "Mi alapján várja ezt az eredményt a modell?"},
     "market_comparison": {"EN": "Market comparison", "HU": "Market összehasonlítás"},
     "technical_routing": {"EN": "Technical routing and model identifiers", "HU": "Technical routing és modelazonosítók"},
     "market": {"EN": "Market", "HU": "Market"},

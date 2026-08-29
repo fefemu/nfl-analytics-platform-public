@@ -9,7 +9,6 @@ import streamlit as st
 from src.dashboard.components import empty_state, team_badge
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
-    TOP_PICK_CRITERIA,
     classify_publication_candidates,
     format_decimal_odds,
     format_utc_timestamp_in_hungary,
@@ -36,19 +35,19 @@ def _number(value: float, language: Language, digits: int = 1) -> str:
 
 
 def _candidate_card(row: pd.Series, language: Language) -> str:
-    model_label = "Modell" if language == "HU" else "Model"
+    model_label = "Modell esélye" if language == "HU" else "Model probability"
     model_help = (
         "A modell által becsült valószínűség, hogy az adott kimenetel bekövetkezik."
         if language == "HU" else
         "The model-estimated probability that the selected outcome occurs."
     )
     edge_help = (
-        "A modell valószínűsége és a fogadóirodai margin nélküli piaci valószínűség közötti eltérés."
+        "A modell és a piac által becsült valószínűség különbsége."
         if language == "HU" else
         "Difference between model probability and the bookmaker-margin-free market probability."
     )
     ev_help = (
-        "Az adott odds mellett számított elméleti várható hozam. Például +10% EV sok hasonló, egyenként 100 egységnyi fogadásra átlagosan +10 egység elméleti eredményt jelent; nem garantált profit."
+        "A modell becslése alapján számított várható érték az adott oddson."
         if language == "HU" else
         "Theoretical long-run return at the displayed odds; not guaranteed profit."
     )
@@ -81,18 +80,9 @@ def _filter_candidates(
     board: pd.DataFrame,
     market_key: str | None,
     matchup: str | None,
-    minimum_edge: float,
-    minimum_ev: float,
-    minimum_model_probability: float,
-    minimum_books: int,
 ) -> pd.DataFrame:
-    filtered = board.loc[
-        (board["probability_edge_percentage_points"] >= minimum_edge)
-        & (board["expected_value_percent"] >= minimum_ev)
-        & (board["model_probability"] >= minimum_model_probability / 100.0)
-        & (board["bookmaker_count"] >= minimum_books)
-        & board["positive_expected_value"]
-    ].copy()
+    filtered = classify_publication_candidates(board)
+    filtered = filtered.loc[filtered["publication_eligible"]].copy()
     if market_key:
         filtered = filtered.loc[filtered["market_key"] == market_key]
     if matchup:
@@ -165,52 +155,22 @@ def render_betting_board(
     matchups = sorted((forward["away_team"] + " @ " + forward["home_team"]).unique())
     all_matchups = "Összes mérkőzés" if language == "HU" else "All matchups"
 
-    first_row = st.columns([1.0, 1.25, 1, 1])
+    first_row = st.columns(2)
     with first_row[0]:
         market_label = st.selectbox("Piac" if language == "HU" else "Market", tuple(market_labels))
     with first_row[1]:
         matchup_label = st.selectbox("Mérkőzés" if language == "HU" else "Matchup", (all_matchups, *matchups))
-    with first_row[2]:
-        minimum_edge = st.number_input("Minimum Edge (pp)", min_value=0.0, value=TOP_PICK_CRITERIA.minimum_edge_percentage_points, step=1.0)
-    with first_row[3]:
-        minimum_ev = st.number_input("Minimum EV (%)", min_value=0.0, value=TOP_PICK_CRITERIA.minimum_expected_value_percent, step=1.0)
-
-    second_row = st.columns([1, 1, 2])
-    with second_row[0]:
-        minimum_model_probability = st.number_input(
-            "Minimum modellvalószínűség (%)" if language == "HU" else "Minimum model probability (%)",
-            min_value=0.0, max_value=100.0, value=TOP_PICK_CRITERIA.minimum_model_probability * 100.0, step=5.0,
-            help=(
-                "Alapértelmezésben csak olyan kimenetelek jelennek meg, amelyeket a modell legalább 50%-ban valószínűnek tart."
-                if language == "HU" else
-                "By default, only outcomes the model considers at least 50% likely are shown."
-            ),
-        )
-    with second_row[1]:
-        minimum_books = st.number_input(
-            "Irodák minimális száma" if language == "HU" else "Minimum bookmakers",
-            min_value=1, value=TOP_PICK_CRITERIA.minimum_bookmakers, step=1,
-            help=(
-                "Az adott piac összehasonlításához felhasznált fogadóirodák minimális száma."
-                if language == "HU" else
-                "Minimum number of bookmakers used to compare the market."
-            ),
-        )
-
     filtered = _filter_candidates(
         forward,
         market_labels[market_label],
         None if matchup_label == all_matchups else matchup_label,
-        minimum_edge,
-        minimum_ev,
-        minimum_model_probability,
-        minimum_books,
     )
-    classified = classify_publication_candidates(filtered)
+    classified = filtered
     cards = select_best_candidates(
         classified.loc[classified["publication_eligible"]],
         positive_only=True,
     )
+
     st.caption(
         (
             f"Következő hét: **{next_week}. hét** · {len(cards)} Top tipp. "
@@ -222,10 +182,9 @@ def render_betting_board(
     )
     if classified.empty:
         empty_state(
-            "No candidates match these filters" if language == "EN" else "Nincs a szűrőknek megfelelő tipp",
-            "Lower one of the thresholds to inspect more offers."
-            if language == "EN" else
-            "Csökkents valamelyik küszöbértéken további ajánlatok megtekintéséhez.",
+            "No selected signals match these filters" if language == "EN" else "Nincs a szűrőknek megfelelő kiválasztott jelzés",
+            "Choose another market or matchup."
+            if language == "EN" else "Válassz másik piacot vagy mérkőzést.",
         )
         return
 
@@ -249,16 +208,14 @@ def render_betting_board(
                         unsafe_allow_html=True,
                     )
 
-    st.markdown("### " + ("Részletes piaci adatok" if language == "HU" else "Detailed market data"))
-    detail_help = (
-        "Csak a platform kiválasztási feltételeinek megfelelő piaci jelzések jelennek meg. "
-        "A szűrés a modell becsült valószínűsége, a piachoz képesti eltérés (Edge), "
-        "a várható érték (EV), valamint az elérhető odds- és bookmakeradatok alapján történik. "
+    st.markdown("### " + ("Kiválasztott piaci jelzések" if language == "HU" else "Selected market signals"))
+    st.caption(
+        "A táblázat csak azokat a piacokat mutatja, amelyek megfelelnek a modell kiválasztási feltételeinek."
         if language == "HU" else
-        "Only market signals satisfying the platform selection criteria are shown. Selection uses "
-        "model probability, Edge, EV and available odds and bookmaker data. "
-    ) + top_pick_criteria_text(language)
-    st.caption("ⓘ " + detail_help)
+        "The table only shows markets that satisfy the model's selection criteria."
+    )
+    with st.expander("ⓘ Aktuális kiválasztási feltételek" if language == "HU" else "ⓘ Current selection criteria"):
+        st.write(top_pick_criteria_text(language))
     detail = select_best_candidates(
         classified.loc[classified["publication_eligible"]], positive_only=True
     )

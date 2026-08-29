@@ -18,11 +18,12 @@ def test_game_center_hero_contains_predictions_and_team_logos() -> None:
         "predicted_total_points": 51.5,
     })
 
-    markup = _hero(row)
+    markup = _hero(row, "HU")
 
     assert "BUF 44.3 percent, KC 55.7 percent" in markup
     assert "24.1 – 27.4" in markup
-    assert "HOME MARGIN" in markup
+    assert "VÁRHATÓ KÜLÖNBSÉG" in markup
+    assert "1. HÉT" in markup
     assert markup.count("nap-team-logo") == 2
 
 
