@@ -60,12 +60,13 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-at { color:var(--muted); font-weight:800; }
 .nap-scoreline { display:flex; justify-content:space-between; gap:.7rem; color:var(--muted); border-top:1px solid var(--border); padding-top:.75rem; font-size:.8rem; }
 .nap-scoreline b { color:var(--text); }
-.nap-candidate-card { margin-bottom:1rem; }
+.nap-candidate-card { position:relative; z-index:1; overflow:visible; margin-bottom:1rem; }
+.nap-candidate-card:hover,.nap-candidate-card:focus-within { z-index:10010; }
 .nap-candidate-teams { display:flex; align-items:center; justify-content:space-between; gap:.45rem; }
 .nap-candidate-market { font-size:1rem; font-weight:800; margin:.9rem 0; }
 .nap-candidate-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.45rem; color:var(--muted); font-size:.76rem; }
-.nap-candidate-grid span { background:rgba(255,255,255,.025); padding:.5rem; border-radius:6px; }
-.nap-candidate-grid b { display:block; color:var(--text); font-size:.95rem; margin-top:.15rem; }
+.nap-candidate-grid > span { background:rgba(255,255,255,.025); padding:.5rem; border-radius:6px; }
+.nap-candidate-grid > span > b { display:block; color:var(--text); font-size:.95rem; margin-top:.15rem; }
 .nap-candidate-grid .nap-positive { color:var(--green); }
 .nap-candidate-footer { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:.75rem; margin-top:.8rem; color:var(--muted); font-size:.76rem; }
 .nap-attribution { color:var(--muted); font-size:.72rem; line-height:1.45; }

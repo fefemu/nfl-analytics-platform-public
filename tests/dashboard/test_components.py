@@ -52,3 +52,11 @@ def test_tooltip_icon_is_touch_and_keyboard_accessible() -> None:
     assert 'aria-label="Explain &quot;Model probability&quot;"' in markup
     assert 'role="tooltip"' in markup
     assert "Model probability &lt; market probability" in markup
+
+
+def test_candidate_grid_styles_do_not_leak_into_nested_tooltips() -> None:
+    assert ".nap-candidate-grid > span {" in APP_CSS
+    assert ".nap-candidate-grid > span > b {" in APP_CSS
+    assert ".nap-candidate-grid span {" not in APP_CSS
+    assert ".nap-candidate-card:hover,.nap-candidate-card:focus-within" in APP_CSS
+    assert "z-index:10010" in APP_CSS
