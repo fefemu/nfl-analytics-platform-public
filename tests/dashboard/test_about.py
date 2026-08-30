@@ -69,7 +69,9 @@ def test_data_model_contains_current_schema_table_counts() -> None:
 
 def test_data_flow_contains_success_and_failure_paths() -> None:
     content = DATA_FLOW_DIAGRAM.read_text(encoding="utf-8")
-    assert "Modellezési pipeline" in content
-    assert "Odds pipeline" in content
-    assert "SUCCESS" in content
+    assert "GitHub Actions" in content
+    assert "Előkészítés és modellezés" in content
+    assert "Oddsok frissítése" in content
+    assert "Publikálás" in content
     assert "FAILED" in content
+    assert "Az előző publikált adatállapot változatlan marad" in content

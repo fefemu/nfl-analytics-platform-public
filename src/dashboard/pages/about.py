@@ -64,36 +64,44 @@ DIAGRAM_TRANSLATIONS = {
     },
     "platform_data_flow.svg": {
         "Adatfrissítési folyamat": "Data refresh workflow",
-        "Három fázisban a frissítés indításától az új eredmények megjelenéséig": "Three phases from refresh start to published results",
+        "Az automatikus vagy manuális indítástól a validált publikálásig": "From scheduled or manual start to validated publication",
         "ADAT ÉS MODELLEZÉS": "DATA AND MODELING",
-        "1. Frissítés indítása": "1. Start refresh",
-        "Online API vagy lokális": "Online API or local",
-        "odds snapshot mód": "odds snapshot mode",
-        "2. Auditbejegyzés": "2. Audit record",
+        "1. Futás indítása": "1. Start run",
+        "GitHub Actions": "GitHub Actions",
+        "Ütemezetten vagy manuálisan": "Scheduled or manual",
+        "2. Környezet és audit": "2. Environment and audit",
+        "Run ID": "Run ID",
         "státusz: RUNNING": "status: RUNNING",
-        "3. Modellezési pipeline": "3. Modeling pipeline",
-        "→ modeling dataset/splits/governance → predictionök": "→ modeling dataset/splits/governance → predictions",
-        "→ várt pontok → szezon-szimuláció": "→ implied scores → season simulation",
-        "A builderek validáció után commitolnak.": "Builders commit after validation.",
+        "3. Adatforrások frissítése": "3. Refresh data sources",
+        "nflverse · nfelo · depth chart": "nflverse · nfelo · depth charts",
+        "injuries · snap count · időjárás": "injuries · snap counts · weather",
+        "4. Előkészítés és modellezés": "4. Preparation and modeling",
+        "tisztítás → feature-ök → predictionök": "cleaning → features → predictions",
+        "→ szezon-szimuláció": "→ season simulation",
         "Modellezés": "Modeling",
         "sikeres?": "successful?",
         "PIAC ÉS PUBLIKÁLÁS": "MARKET AND PUBLISHING",
-        "4. Odds pipeline": "4. Odds pipeline",
-        "Piaci adatok és": "Market data and",
-        "számítások rendben?": "calculations valid?",
+        "5. Oddsok frissítése": "5. Refresh odds",
+        "The Odds API → snapshot": "The Odds API → snapshot",
+        "→ processed odds": "→ processed odds",
+        "6. Piaci számítások": "6. Market calculations",
+        "no-vig probability → Edge → EV": "no-vig probability → Edge → EV",
+        "→ Betting Board": "→ Betting Board",
+        "Ellenőrzések": "Checks",
         "Kickoff előtti előrejelzések rögzítése": "Archive pre-kickoff predictions",
         "későbbi kiértékeléshez": "for later evaluation",
-        "6. Sikeres lezárás": "6. Successful completion",
-        "státusz: SUCCESS": "status: SUCCESS",
+        "7. Forward archive": "7. Forward archive",
+        "8. Publikálás": "8. Publication",
+        "Validált output táblák": "Validated output tables",
+        "Az előző release atomikus cseréje": "Atomically replace the previous release",
         "KISZOLGÁLÁS": "SERVING",
-        "7. Validált DuckDB-outputok": "7. Validated DuckDB outputs",
-        "prediction · betting · simulation táblák": "prediction · betting · simulation tables",
-        "8. Streamlit megjelenítés": "8. Streamlit presentation",
-        "Read-only hozzáférés az új outputokhoz": "Read-only access to new outputs",
-        "9. Adatok frissítve": "9. Data refreshed",
-        "Legutóbbi sikeres output időpontja": "Latest successful output timestamp",
-        "Hibaág: futás megszakítása": "Failure path: stop the run",
-        "státusz: FAILED · hibaüzenet mentése · nincs Forward archive": "status: FAILED · save error message · no Forward archive",
+        "9. Streamlit": "9. Streamlit",
+        "Az alkalmazás az új adatállapotot olvassa": "The app reads the new data state",
+        "10. Adatok frissítve": "10. Data refreshed",
+        "Az utolsó sikeres publikálás időpontja": "Timestamp of the latest successful publication",
+        "Futás sikertelen": "Run failed",
+        "FAILED státusz · hibalóg": "FAILED status · error log",
+        "Az előző publikált adatállapot változatlan marad": "The previously published data state remains unchanged",
         "nem": "no",
         "igen": "yes",
     },
@@ -118,7 +126,6 @@ def _render_diagram(path: Path, language: Language) -> None:
         'alt="Platform technical diagram">',
         unsafe_allow_html=True,
     )
-
 
 def _feature_cards(language: Language) -> None:
     items = (
@@ -271,6 +278,59 @@ def _validation(language: Language) -> None:
         "archived pre-kickoff 2026 predictions form the forward test. Shifted rolling "
         "features protect against data leakage."
     )
+
+
+def _automatic_refresh(language: Language) -> None:
+    if language == "HU":
+        st.write(
+            "A platform adatai és előrejelzései automatikusan frissülnek a GitHub "
+            "Actions segítségével. A teljes folyamat hetente három alkalommal fut. "
+            "Frissíti a rendelkezésre álló NFL-adatokat, újraszámolja a változókat "
+            "és előrejelzéseket, lekéri az aktuális oddsokat, majd újragenerálja a "
+            "piaci összehasonlításokat és a szezon-szimulációt."
+        )
+        st.write(
+            "Az új adatok csak a beépített ellenőrzések sikeres lefutása után "
+            "kerülnek publikálásra. Kritikus hiba esetén a futás megszakad, a "
+            "platform pedig továbbra is az utolsó sikeresen validált eredményeket mutatja."
+        )
+        schedule = (("Kedd", "08:00"), ("Csütörtök", "15:00"), ("Vasárnap", "15:00"))
+        footer = (
+            "Az időzített futások mellett a frissítés manuálisan is elindítható "
+            "GitHub Actionsből. A jobb felső sarokban látható „Adatok frissítve” "
+            "időpont mindig az utolsó sikeresen publikált adatállapotot jelzi."
+        )
+        zone = "budapesti idő"
+    else:
+        st.write(
+            "Data and forecasts are refreshed automatically with GitHub Actions three "
+            "times per week. Each run updates available NFL sources, rebuilds features "
+            "and forecasts, downloads current odds, and regenerates market comparisons "
+            "and the season simulation."
+        )
+        st.write(
+            "New data is published only after all built-in checks pass. A critical failure "
+            "stops the run, while the platform continues serving the latest successfully "
+            "validated release."
+        )
+        schedule = (("Tuesday", "08:00"), ("Thursday", "15:00"), ("Sunday", "15:00"))
+        footer = (
+            "The full refresh can also be started manually from GitHub Actions. The "
+            "\"Data updated\" timestamp in the top-right corner always identifies the "
+            "latest successfully published data state."
+        )
+        zone = "Budapest time"
+    columns = st.columns(3)
+    for column, (day, time) in zip(columns, schedule, strict=True):
+        with column:
+            st.markdown(
+                '<div class="nap-card" style="text-align:center">'
+                f'<div class="nap-eyebrow">{day}</div>'
+                f'<div class="nap-metric-value blue">{time}</div>'
+                f'<div class="nap-muted">{zone}</div></div>',
+                unsafe_allow_html=True,
+            )
+    st.caption(footer)
     st.info(
         "A részletes módszertan, a modell-összehasonlítás, a Brier score, a kalibráció és a hatásvizsgálatok a Data Science Lab oldalon találhatók."
         if language == "HU" else
@@ -380,7 +440,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
         headings = (
             "Mit kap a felhasználó?", "Hogyan lesz a nyers adatból előrejelzés?",
             "Adatforrások", "Mit vesznek figyelembe a modellek?",
-            "Hogyan ellenőrizzük a modelleket?", "Technikai háttér",
+            "Hogyan ellenőrizzük a modelleket?", "Automatikus frissítés", "Technikai háttér",
             "A projektről és rólam",
         )
     else:
@@ -394,7 +454,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
         headings = (
             "What does the user get?", "How does raw data become a prediction?",
             "Data sources", "What do the models consider?", "How are models checked?",
-            "Technical background", "About the project and me",
+            "Automatic refresh", "Technical background", "About the project and me",
         )
     st.markdown(f"### {headings[0]}")
     _feature_cards(language)
@@ -407,6 +467,8 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
     st.markdown(f"### {headings[4]}")
     _validation(language)
     st.markdown(f"### {headings[5]}")
+    _automatic_refresh(language)
+    st.markdown(f"### {headings[6]}")
     st.write(
         "A platform három nézetben mutatja be a technikai megvalósítást: az Architektúra "
         "a használt technológiákat, az Adatmodell a DuckDB adatrétegeit és tábláit, az "
@@ -416,7 +478,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
         "Data model shows DuckDB layers and tables, and Data refresh flow shows the complete refresh process."
     )
     _diagrams(language)
-    st.markdown(f"### {headings[6]}")
+    st.markdown(f"### {headings[7]}")
     _author(language)
     st.warning(
         "Az előrejelzések valószínűségi becslések, nem garantált kimenetek. A pozitív "

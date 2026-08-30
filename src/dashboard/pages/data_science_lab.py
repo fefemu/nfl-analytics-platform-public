@@ -23,8 +23,8 @@ MODEL_LABELS = {
         "EN": "Elo + quarterback + injury burden",
     },
     "logistic_full_core": {
-        "HU": "Teljes logisztikus modell",
-        "EN": "Full logistic model",
+        "HU": "Teljes saját modell",
+        "EN": "Full platform model",
     },
 }
 
@@ -116,18 +116,32 @@ def _validation_flow(language: Language) -> None:
         with column:
             st.markdown(f"#### {title}")
             st.write(body)
-    with st.expander("Validációs biztosítékok" if language == "HU" else "Validation safeguards"):
+    with st.expander(
+        "Hogyan kerüljük el a félrevezető eredményeket?"
+        if language == "HU" else
+        "How do we avoid misleading results?"
+    ):
         st.markdown(
             "- **Időrendi validáció:** nincs véletlenszerű train-test split.\n"
             "- **Adatszivárgás elleni védelem:** a rolling feature-ök egy meccsel eltolva készülnek.\n"
             "- **Azonos tesztminta:** a jelölteket ugyanazokon a meccseken hasonlítjuk össze.\n"
+            "- **Kickoff előtti snapshot:** csak a kezdőrúgás előtt rögzített előrejelzések kerülnek a forward testbe.\n"
             "- **Külön adatútvonalak:** a teljes és hiányos adatokra használt modelleket külön értékeljük."
             if language == "HU" else
             "- **Chronological validation:** no random train-test split.\n"
             "- **Leakage protection:** rolling features are shifted by one game.\n"
             "- **Identical samples:** candidates are compared on the same games.\n"
+            "- **Pre-kickoff snapshots:** only forecasts archived before kickoff enter the forward test.\n"
             "- **Separate data paths:** complete-input and missing-input models are evaluated separately."
         )
+    st.info(
+        "A 2026-os szezon prospective forward test: a fejlesztési eredmények nem "
+        "garantálják a jövőbeli teljesítményt, ezért csak a kickoff előtt "
+        "archivált előrejelzéseket értékeljük."
+        if language == "HU" else
+        "The 2026 season is the prospective forward test. Development results do not "
+        "guarantee future performance, so only forecasts archived before kickoff count."
+    )
 
 
 def _scorecard(scorecard: pd.DataFrame, language: Language) -> None:
@@ -187,7 +201,18 @@ def _build_season_chart(seasons: pd.DataFrame):
         color="model_name",
         markers=True,
         labels={"validation_season": "Season", "brier_score": "Brier score"},
+        hover_data={"technical_model_id": True}
+        if "technical_model_id" in seasons.columns else None,
     )
+    if "is_selected" in seasons.columns:
+        selected_names = set(
+            seasons.loc[seasons["is_selected"].astype(bool), "model_name"].astype(str)
+        )
+        for trace in figure.data:
+            if str(trace.name) in selected_names:
+                trace.update(line={"width": 5}, marker={"size": 10})
+            else:
+                trace.update(line={"width": 2}, opacity=0.55)
     return figure
 
 
@@ -351,7 +376,7 @@ def _metric_table(language: Language) -> None:
         [
             ["Brier score", "A valószínűségi becslések pontossága", "Győzelmi modell", "Alacsonyabb"],
             ["Log loss", "A magabiztos tévedéseket erősen büntető valószínűségi hiba", "Győzelmi modell", "Alacsonyabb"],
-            ["Accuracy", "A helyesen eltalált győztesek aránya", "Kiegészítő mutató", "Magasabb"],
+            ["Találati arány (Accuracy)", "A helyesen eltalált győztesek aránya", "Kiegészítő mutató", "Magasabb"],
             ["MAE", "Az átlagos abszolút előrejelzési hiba pontban", "Spread / Total", "Alacsonyabb"],
             ["RMSE", "A nagy mellélövéseket erősebben büntető hiba pontban", "Spread / Total", "Alacsonyabb"],
         ] if language == "HU" else [
@@ -372,9 +397,9 @@ def _metric_table(language: Language) -> None:
 
 def _candidate_progression(scorecard: pd.DataFrame, language: Language) -> None:
     st.markdown(
-        "### 04 — Hogyan fejlesztjük a modelleket?"
+        "### 04 — Milyen modelleket vizsgáltunk?"
         if language == "HU" else
-        "### 04 — How are the models developed?"
+        "### 04 — Which models were evaluated?"
     )
     st.write(
         (
@@ -417,6 +442,11 @@ def _candidate_progression(scorecard: pd.DataFrame, language: Language) -> None:
             continue
         label = MODEL_LABELS.get(model_id, {language: model_id})[language]
         st.markdown(f"**{index}. {label}** — {descriptions[model_id][language]}")
+    st.caption(
+        "↓ Ezek a jelöltek kerülnek azonos tesztmintán összehasonlításra."
+        if language == "HU" else
+        "↓ These candidates are compared on the same test sample."
+    )
 
 
 def _results_section(
@@ -425,18 +455,19 @@ def _results_section(
     language: Language,
 ) -> None:
     st.markdown(
-        "### 05 — Mit mutatnak az eredmények?"
+        "### 05 — Melyik saját modell teljesít a legjobban?"
         if language == "HU" else
-        "### 05 — What do the results show?"
+        "### 05 — Which platform model performs best?"
     )
     st.write(
         (
-            "A győzelmi modelleknél a Brier score az elsődleges összehasonlítási mutató: "
-            "az alacsonyabb érték pontosabb valószínűségi becslést jelent. Az Accuracy "
-            "hasznos kiegészítés, de önmagában nem választ modellt."
+            "A jelölt modelleket azonos tesztmintán hasonlítjuk össze. A győzelmi "
+            "valószínűségi modelleknél elsősorban a Brier score és a Log loss "
+            "számít; a találati arány kiegészítő mutató. Az alacsonyabb hiba jobb."
         ) if language == "HU" else (
-            "Brier score is the primary comparison metric for win models: lower values "
-            "mean better probability estimates. Accuracy is context, not the selection rule."
+            "Candidates are compared on the same test sample. Brier score and Log loss "
+            "are the primary win-probability metrics; accuracy is supporting context. "
+            "Lower error is better."
         )
     )
     if not scorecard.empty:
@@ -449,7 +480,7 @@ def _results_section(
             "model_name": "Modell" if language == "HU" else "Model",
             "model_version": "Verzió" if language == "HU" else "Version",
             "game_count": "Vizsgált meccsek" if language == "HU" else "Games",
-            "accuracy": "Accuracy",
+            "accuracy": "Találati arány (Accuracy)" if language == "HU" else "Accuracy",
             "brier_score": "Brier score",
             "log_loss": "Log loss",
             "worst_season_brier_score": "Legrosszabb szezon Brier score" if language == "HU" else "Worst-season Brier score",
@@ -461,66 +492,141 @@ def _results_section(
         if brier_column in table and table[brier_column].notna().any():
             best_index = table[brier_column].astype(float).idxmin()
             model_column = "Modell" if language == "HU" else "Model"
-            table.loc[best_index, model_column] = "★ " + str(table.loc[best_index, model_column])
+            table.loc[best_index, model_column] = (
+                "★ " + str(table.loc[best_index, model_column])
+                + (" — Kiválasztott saját modell" if language == "HU" else " — Selected platform model")
+            )
         st.dataframe(table, hide_index=True, width="stretch")
     if not seasons.empty:
         st.markdown("#### Szezononkénti stabilitás" if language == "HU" else "#### Stability by season")
         st.caption(
-            "Nemcsak az átlag számít: egy jó modell előnye lehetőleg több szezonban is megmarad, és nem egyetlen kiugró évből származik."
+            "Mit érdemes nézni? Egy jó modell nemcsak átlagosan teljesít jól, hanem több "
+            "szezonon keresztül is viszonylag stabil eredményt ad. Az alacsonyabb Brier score jobb."
             if language == "HU" else
             "Average performance is not enough: a useful model should remain reasonably stable across seasons rather than rely on one exceptional year."
         )
-        _season_chart(seasons.assign(model_name=seasons["model_name"].map(
-            lambda value: MODEL_LABELS.get(str(value), {language: str(value)})[language]
-        )), language)
+        selected_model_id = (
+            str(scorecard.loc[scorecard["brier_score"].astype(float).idxmin(), "model_name"])
+            if "brier_score" in scorecard and scorecard["brier_score"].notna().any()
+            else None
+        )
+        chart_data = seasons.assign(
+            is_selected=seasons["model_name"].astype(str).eq(selected_model_id),
+            technical_model_id=seasons["model_name"].astype(str),
+            model_name=seasons["model_name"].map(
+                lambda value: MODEL_LABELS.get(str(value), {language: str(value)})[language]
+            ),
+        )
+        _season_chart(chart_data, language)
+    st.caption(
+        "↓ A legjobb saját modell adja az éles ensemble saját modellkomponensének alapját."
+        if language == "HU" else
+        "↓ The best platform model becomes the basis of the platform component in the production ensemble."
+    )
 
 
-def _production_model_card(registry: pd.DataFrame, language: Language) -> None:
+def _production_model_card(
+    registry: pd.DataFrame,
+    scorecard: pd.DataFrame,
+    language: Language,
+) -> None:
     if registry.empty:
         return
     row = registry.iloc[0]
     logistic_weight = float(row.get("logistic_weight", 0.7))
     elo_weight = float(row.get("elo_weight", 0.3))
     st.markdown(
-        "### 06 — Melyik modell fut élesben?"
+        "### 06 — Hogyan lesz a kiválasztott modellből éles előrejelzés?"
         if language == "HU" else
-        "### 06 — Which model is in production?"
+        "### 06 — How does the selected model become a production forecast?"
     )
-    title = "Logistic + nfelo ensemble" if language == "HU" else "Logistic + nfelo ensemble"
+    selected_model_id = None
+    if (
+        not scorecard.empty
+        and "brier_score" in scorecard
+        and scorecard["brier_score"].notna().any()
+    ):
+        selected_model_id = str(
+            scorecard.loc[
+                scorecard["brier_score"].astype(float).idxmin(),
+                "model_name",
+            ]
+        )
+    default_label = (
+        "Saját logisztikus modell"
+        if language == "HU" else
+        "Platform logistic model"
+    )
+    selected_label = MODEL_LABELS.get(
+        selected_model_id or "",
+        {language: selected_model_id or default_label},
+    )[language]
+    title = "Logisztikus + nfelo ensemble" if language == "HU" else "Logistic + nfelo ensemble"
     status = "2026 forward test"
     st.markdown(
         '<div class="nap-card">'
         f'<div class="nap-eyebrow">{"Aktuális győzelmi modell" if language == "HU" else "Current win model"}</div>'
         f'<div class="nap-metric-value blue">{title}</div>'
-        f'<div class="nap-muted">{logistic_weight:.0%} Logistic Regression · {elo_weight:.0%} publikált nfelo</div>'
+        f'<div class="nap-muted">{logistic_weight:.0%} {selected_label} · {elo_weight:.0%} published nfelo</div>'
         f'<div class="nap-divider"></div>{status_pill(status.upper(), True)}'
         f'<div class="nap-muted">{"Verzió" if language == "HU" else "Version"} {row.get("model_version", "–")}</div></div>',
         unsafe_allow_html=True,
     )
     st.write(
         (
-            "Az ensemble a saját, csapaterősséget, irányítóhelyzetet és egységszintű "
-            "sérülési terhelést használó logistic modellt egy független nfelo-becsléssel "
-            "kombinálja. A blend célja a saját modell jelének stabilizálása."
+            "Az éles győzelmi előrejelzés nem egy újabb, a fenti összehasonlítástól "
+            "független modell. A scorecardon kiválasztott Elo–QB–sérülés modellstruktúrát "
+            "egy későbbi audit külső nfelo csapaterősséggel és QB adjustmenttel bővítette. "
+            "Ennek a platformon tanított logisztikus komponensnek a becslését kombináljuk "
+            "a publikált nfelo valószínűséggel."
         ) if language == "HU" else (
-            "The ensemble combines the platform's team-strength, quarterback and injury "
-            "logistic model with an independent published nfelo estimate to improve stability."
+            "Production is not an unrelated extra model. A later audit extended the selected "
+            "Elo-QB-injury structure with external nfelo team strength and QB adjustment. "
+            "That platform-trained logistic component is blended with published nfelo probability."
         )
+    )
+    flow = st.columns([4, 1, 4, 1, 4])
+    flow[0].markdown(
+        f"**{'Platform logisztikus modellje' if language == 'HU' else 'Platform logistic model'}**  \n"
+        f"{selected_label}  \n**{logistic_weight:.0%}**"
+    )
+    flow[1].markdown("## +")
+    flow[2].markdown(
+        f"**{'Külső referencia' if language == 'HU' else 'External reference'}**  \n"
+        f"nfelo  \n**{elo_weight:.0%}**"
+    )
+    flow[3].markdown("## =")
+    flow[4].markdown(
+        f"**{'Éles előrejelzés' if language == 'HU' else 'Production forecast'}**  \n"
+        f"{title}"
+    )
+    st.markdown(
+        '<div class="nap-card" style="text-align:center">'
+        f'<div class="nap-metric-value blue">{logistic_weight:.0%} '
+        f'{"saját modell" if language == "HU" else "platform model"} + '
+        f'{elo_weight:.0%} nfelo = '
+        f'{"éles előrejelzés" if language == "HU" else "production forecast"}'
+        '</div></div>',
+        unsafe_allow_html=True,
     )
     first, second = st.columns(2)
     with first:
-        st.markdown("#### Elsődleges modell" if language == "HU" else "#### Primary model")
+        st.markdown("#### Normál esetben" if language == "HU" else "#### Normal operation")
         st.write(
-            "Külső nfelo csapaterősség, a saját és nfelo QB adjustment, valamint támadó-, védő- és special teams sérülési terhelés."
+            "A teljes aktuális adatokat használó platformmodell és a publikált nfelo "
+            "valószínűség súlyozott ensemble-ja készíti a becslést."
             if language == "HU" else
-            "External nfelo team strength, platform and nfelo QB adjustment, plus offense, defense and special-teams injury burden."
+            "A weighted ensemble of the complete-input platform model and published nfelo probability."
         )
     with second:
-        st.markdown("#### Hiányos adatok esetén" if language == "HU" else "#### When inputs are incomplete")
+        st.markdown("#### Hiányos aktuális adatok esetén" if language == "HU" else "#### When current inputs are incomplete")
         st.write(
-            "A külön validált tartalék modell külső nfelo csapaterősséget és nfelo QB adjustmentet használ."
+            "Ha valamely szükséges aktuális adatforrás nem érhető el vagy nem teljes, "
+            "a rendszer automatikusan a rendelkezésre álló adatokhoz validált fallback "
+            "modellt használja."
             if language == "HU" else
-            "A separately validated fallback model uses external nfelo team strength and nfelo QB adjustment."
+            "If a required current data source is unavailable or incomplete, the system "
+            "automatically uses a fallback model validated for the inputs that remain available."
         )
 
 
@@ -611,16 +717,16 @@ def _sample_table(rows: pd.DataFrame, topic: str, language: Language) -> None:
 def _home_field_panel(data: pd.DataFrame, language: Language) -> None:
     row = _segment(data, "home_field", "all_games")
     if language == "HU":
-        st.markdown("#### A kérdés")
+        st.markdown("#### Van mérhető hazai pályaelőny az NFL-ben?")
         st.write(
-            "Van-e általános előnye annak a csapatnak, amelyik hazai pályán játszik? "
+            "Itt azt vizsgáljuk, van-e általános előnye annak a csapatnak, amelyik hazai pályán játszik. "
             "Itt nem két külön csoportot hasonlítunk össze: minden NFL-meccsnek van hazai "
             "csapata, ezért a teljes minta hazai eredményét foglaljuk össze."
         )
     else:
-        st.markdown("#### The question")
+        st.markdown("#### Is there a measurable home-field advantage in the NFL?")
         st.write(
-            "Do teams have a general advantage when playing at home? This is a league-wide "
+            "This is a league-wide "
             "summary rather than a two-group comparison because every game has a home team."
         )
     columns = st.columns(3)
@@ -650,28 +756,28 @@ def _home_field_panel(data: pd.DataFrame, language: Language) -> None:
 def _comparison_panel(data: pd.DataFrame, topic: str, language: Language) -> None:
     introductions = {
         "rest": {
-            "HU": ("**Kérdés:** jobban teljesít-e a hazai csapat, ha több ideje volt pihenni? "
+            "HU": ("Jobban teljesít-e a hazai csapat, ha több ideje volt pihenni? "
                    "A +3 nap azt jelenti, hogy a hazai csapat legalább három nappal többet pihent az ellenfelénél. "
                    "A bye week csoportban csak a hazai csapat érkezett pihenőhétről."),
-            "EN": "**Question:** does the home team perform better with more rest? +3 days means at least three additional rest days versus its opponent.",
+            "EN": "Does the home team perform better with more rest? +3 days means at least three additional rest days versus its opponent.",
         },
         "qb": {
-            "HU": ("**Kérdés:** hogyan változik az eredmény, ha az egyik várható kezdő QB ratingje lényegesen jobb? "
+            "HU": ("Hogyan változik az eredmény, ha az egyik várható kezdő QB ratingje lényegesen jobb? "
                    "A rating nem egyszerű rangsor: a korábbi passzjátékból becsült, folyamatos értékelés. "
                    "A ±0,75-ig terjedő különbséget hasonló QB-helyzetnek tekintjük."),
-            "EN": "**Question:** how do results change when one expected starting QB has a meaningfully higher historical rating? Differences within ±0.75 are treated as similar.",
+            "EN": "How do results change when one expected starting QB has a meaningfully higher historical rating? Differences within ±0.75 are treated as similar.",
         },
         "injury": {
-            "HU": ("**Kérdés:** kapcsolatban áll-e a nagyobb sérülési terhelés a gyengébb eredménnyel? "
+            "HU": ("Kapcsolatban áll-e a nagyobb sérülési terhelés a gyengébb eredménnyel? "
                    "A mutató nemcsak a hiányzók számát, hanem a játékos szerepét és korábbi snap-részesedését is figyelembe veszi. "
                    "A +2 legalább két burden-ponttal nagyobb terhelést jelent."),
-            "EN": "**Question:** is greater role- and snap-weighted injury burden associated with poorer results? A difference of 2+ defines the more-injured group.",
+            "EN": "Is greater role- and snap-weighted injury burden associated with poorer results? A difference of 2+ defines the more-injured group.",
         },
         "weather": {
-            "HU": ("**Kérdés:** milyen környezetben születik több vagy kevesebb pont? "
+            "HU": ("Milyen környezetben születik több vagy kevesebb pont? "
                    "Itt nem a hazai győzelmi arányt, hanem a két csapat együttes pontszámát hasonlítjuk össze. "
                    "Egy meccs egyszerre lehet például szabadtéri és erős szeles; a kategóriák ezért nem mindenhol kizárólagosak."),
-            "EN": "**Question:** which environments are associated with higher or lower combined scoring? Categories can overlap, such as outdoor and high wind.",
+            "EN": "Which environments are associated with higher or lower combined scoring? Categories can overlap, such as outdoor and high wind.",
         },
     }
     st.markdown(introductions[topic][language])
@@ -763,12 +869,5 @@ def render_data_science_lab(
     _validation_flow(language)
     _candidate_progression(scorecard, language)
     _results_section(scorecard, seasons, language)
-    _production_model_card(registry, language)
+    _production_model_card(registry, scorecard, language)
     _impact_analysis(impacts, language)
-    st.info(
-        "Chronological validation trains only on earlier seasons. The 2025 holdout is a historical audit; 2026 is the prospective forward test."
-        if language == "EN" else
-        "A charton látható fejlesztési eredmények nem jelentik azt, hogy a 2026-os "
-        "teljesítmény garantált. A 2026-os szezon a prospective forward test: csak a "
-        "kickoff előtt rögzített predictionök számítanak majd az értékelésbe."
-    )
