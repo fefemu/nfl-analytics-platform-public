@@ -33,19 +33,21 @@ DIAGRAM_TRANSLATIONS = {
         "Megjelenítés": "Presentation",
         "Interaktív webes felület": "Interactive web interface",
         "Fejlesztés és minőségbiztosítás": "Development and quality assurance",
+        "Fejlesztés és automatizált minőségbiztosítás": "Development and automated quality assurance",
+        "pytest · Git · GitHub Actions": "pytest · Git · GitHub Actions",
     },
     "platform_data_model.svg": {
         "DuckDB adatmodell": "DuckDB data model",
         "mind a 63 aktuális fizikai tábla": "all 63 current physical tables",
-        "1. Forrásadatok — RAW": "1. Source data — RAW",
+        "1. RAW — Forráshű adatok": "1. RAW — Source-faithful data",
         "Mérkőzés és játékos": "Games and players",
         "Depth chart és sérülés": "Depth charts and injuries",
         "Odds snapshotok": "Odds snapshots",
-        "2. Tisztított és egységesített adatok — PROCESSED": "2. Cleaned and standardized data — PROCESSED",
+        "2. PROCESSED — Tisztított és egységesített adatok": "2. PROCESSED — Cleaned and standardized data",
         "Mérkőzés és teljesítmény": "Games and performance",
         "Játékos és depth chart": "Players and depth charts",
         "Külső rating és odds": "External ratings and odds",
-        "3. Elemzési és modellezési réteg — ANALYTICS": "3. Analytics and modeling layer — ANALYTICS",
+        "3. ANALYTICS — Feature-ök és modellezési adatok": "3. ANALYTICS — Features and modeling data",
         "Feature-ök": "Features",
         "Modellezési adatok és governance": "Modeling data and governance",
         "Kapcsolás: game_id": "Join key: game_id",
@@ -54,7 +56,7 @@ DIAGRAM_TRANSLATIONS = {
         "Historikus betting audit": "Historical betting audit",
         "Meccs-, market- és időpontkulcsok": "Game, market and timestamp keys",
         "a historikus kiértékeléshez.": "for historical evaluation.",
-        "4. Alkalmazási kimenetek — ANALYTICS OUTPUT": "4. Application outputs — ANALYTICS OUTPUT",
+        "4. OUTPUT — Publikálható alkalmazási eredmények": "4. OUTPUT — Publishable application results",
         "Aktuális előrejelzések": "Current predictions",
         "Betting és value": "Betting and value",
         "Szezon-szimuláció": "Season simulation",
@@ -127,6 +129,7 @@ def _render_diagram(path: Path, language: Language) -> None:
         unsafe_allow_html=True,
     )
 
+
 def _feature_cards(language: Language) -> None:
     items = (
         (
@@ -184,6 +187,50 @@ def _data_flow(language: Language) -> None:
                 f'<div class="nap-muted">{body}</div></div>',
                 unsafe_allow_html=True,
             )
+
+
+def _quality_assurance(language: Language) -> None:
+    st.markdown(
+        "#### Automatizált tesztelés és minőségbiztosítás"
+        if language == "HU" else
+        "#### Automated testing and quality assurance"
+    )
+    st.write(
+        (
+            "A platform működését több mint 1200 automatizált teszt ellenőrzi. "
+            "A tesztcsomag lefedi az adatfeldolgozást, a feature engineeringet, a modell- "
+            "és előrejelzési logikát, a piaci számításokat, valamint a kritikus "
+            "pipeline-folyamatokat."
+        ) if language == "HU" else (
+            "More than 1,200 automated tests cover data processing, feature engineering, "
+            "model and prediction logic, market calculations, and critical pipeline flows."
+        )
+    )
+    cards = (
+        (
+            ("Kódminőség", "1200+ pytest teszt ellenőrzi, hogy a komponensek és folyamatok a várt módon működnek."),
+            ("Adatminőség", "Séma-, teljességi és konzisztencia-ellenőrzések védik az aktuális production adatállapotot."),
+            ("Modellminőség", "Időrendi backtest, elkülönített holdout és kickoff előtti forward test méri a modelleket."),
+        ) if language == "HU" else (
+            ("Code quality", "1,200+ pytest tests verify that components and workflows behave as expected."),
+            ("Data quality", "Schema, completeness and consistency checks protect the current production data state."),
+            ("Model quality", "Chronological backtests, a separate holdout and pre-kickoff forward tests evaluate the models."),
+        )
+    )
+    columns = st.columns(3)
+    for column, (title, body) in zip(columns, cards, strict=True):
+        with column:
+            st.markdown(
+                '<div class="nap-card">'
+                f'<div class="nap-panel-title">{title}</div>'
+                f'<div class="nap-muted">{body}</div></div>',
+                unsafe_allow_html=True,
+            )
+    st.caption(
+        "A teljes pytest csomag minden ütemezett vagy manuális production refresh során, a publikálás előtt automatikusan lefut."
+        if language == "HU" else
+        "The full pytest suite runs automatically before publication in every scheduled or manually started production refresh."
+    )
 
 
 def _sources(language: Language) -> None:
@@ -290,9 +337,10 @@ def _automatic_refresh(language: Language) -> None:
             "piaci összehasonlításokat és a szezon-szimulációt."
         )
         st.write(
-            "Az új adatok csak a beépített ellenőrzések sikeres lefutása után "
-            "kerülnek publikálásra. Kritikus hiba esetén a futás megszakad, a "
-            "platform pedig továbbra is az utolsó sikeresen validált eredményeket mutatja."
+            "A frissítési folyamat során automatizált adatminőségi és "
+            "konzisztencia-ellenőrzések futnak; kritikus hiba esetén a publikálás "
+            "megszakad, és a platform továbbra is az utolsó sikeresen validált "
+            "adatállapotot használja."
         )
         schedule = (("Kedd", "08:00"), ("Csütörtök", "15:00"), ("Vasárnap", "15:00"))
         footer = (
@@ -309,9 +357,9 @@ def _automatic_refresh(language: Language) -> None:
             "and the season simulation."
         )
         st.write(
-            "New data is published only after all built-in checks pass. A critical failure "
-            "stops the run, while the platform continues serving the latest successfully "
-            "validated release."
+            "Automated data-quality and consistency checks run during every refresh. A "
+            "critical failure stops publication, while the platform continues serving the "
+            "latest successfully validated data state."
         )
         schedule = (("Tuesday", "08:00"), ("Thursday", "15:00"), ("Sunday", "15:00"))
         footer = (
@@ -374,6 +422,21 @@ def _diagrams(language: Language) -> None:
             "The current operational path from source systems to Streamlit; no planned components are shown."
         )
     with data_model:
+        st.markdown(
+            "#### Fizikai adatmodell és adatrétegek"
+            if language == "HU" else
+            "#### Physical data model and data layers"
+        )
+        st.write(
+            "Az ábra a DuckDB mind a 63 aktuális fizikai tábláját mutatja, "
+            "funkcionális csoportokba és adatrétegekbe rendezve. A célja a fizikai "
+            "adatstruktúra és az adatáramlás áttekintése; az oszlopszintű séma, "
+            "a kulcsok és a kapcsolatok részletes definíciói a technikai dokumentációban találhatók."
+            if language == "HU" else
+            "The diagram shows all 63 current physical DuckDB tables, organized into "
+            "functional groups and data layers. It provides an overview of physical data "
+            "structure and flow; column-level schemas, keys and detailed relationships are documented separately."
+        )
         _render_diagram(DATA_MODEL_DIAGRAM, language)
         st.caption(
             "A DuckDB aktuális fizikai táblái: 9 RAW, 12 processed és 42 analytics tábla. A szaggatott kapcsolatok kódban használt logikai joinokat jelölnek, nem deklarált idegen kulcsokat."
@@ -387,6 +450,39 @@ def _diagrams(language: Language) -> None:
             if language == "HU" else
             "The actual audited in-season refresh order. Failed validation stops the run with FAILED status and no forward archive is created."
         )
+
+
+def _source_and_data_management(language: Language) -> None:
+    st.markdown(
+        "#### Forráskód és adatkezelés"
+        if language == "HU" else
+        "#### Source code and data handling"
+    )
+    st.write(
+        (
+            "A projekt külön privát fejlesztési és publikus alkalmazás-repositoryt "
+            "használ. A publikus repository a bemutatható alkalmazáskódot, dokumentációt "
+            "és reprodukálható komponenseket tartalmazza. A hozzáférési kulcsok, "
+            "lokális adatbázisok és a külső források feltételei miatt nem "
+            "továbbterjeszthető adatok nem kerülnek nyilvánosan közzétételre."
+        ) if language == "HU" else (
+            "The project uses separate private development and public application repositories. "
+            "The public repository contains presentable application code, documentation and "
+            "reproducible components. Access keys, local databases and source-derived data that "
+            "cannot be redistributed under their usage terms are not published publicly."
+        )
+    )
+    st.write(
+        (
+            "Az API-kulcsok és hozzáférési tokenek környezeti változókon, illetve "
+            "GitHub Secretsen keresztül kezeltek. A publikus alkalmazás számára szükséges, "
+            "szűkített adatállapot külön, hozzáférés-védett deployment artifactként készül el."
+        ) if language == "HU" else (
+            "API keys and access tokens are managed through environment variables and GitHub "
+            "Secrets. The reduced data state required by the public application is built as a "
+            "separate access-controlled deployment artifact."
+        )
+    )
 
 
 def _author(language: Language) -> None:
@@ -460,6 +556,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
     _feature_cards(language)
     st.markdown(f"### {headings[1]}")
     _data_flow(language)
+    _quality_assurance(language)
     st.markdown(f"### {headings[2]}")
     _sources(language)
     st.markdown(f"### {headings[3]}")
@@ -478,6 +575,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
         "Data model shows DuckDB layers and tables, and Data refresh flow shows the complete refresh process."
     )
     _diagrams(language)
+    _source_and_data_management(language)
     st.markdown(f"### {headings[7]}")
     _author(language)
     st.warning(

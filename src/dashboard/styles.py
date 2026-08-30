@@ -87,6 +87,16 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-narrative { font-size:.94rem; line-height:1.65; color:#dce6f2; }
 .nap-market-row { display:grid; grid-template-columns:1.2fr .8fr .8fr .8fr; gap:.5rem; padding:.65rem 0; border-bottom:1px solid var(--border); font-size:.78rem; }
 .nap-market-row b { color:var(--text); }
+.nap-market-card .nap-candidate-market { margin:.65rem 0 .25rem; }
+.nap-market-edge { margin:.8rem 0 .15rem; font-size:2rem; font-weight:850; letter-spacing:-.04em; line-height:1; }
+.nap-market-edge.positive,.nap-market-card .nap-positive { color:var(--green); }
+.nap-market-edge.negative,.nap-market-card .nap-negative { color:var(--red); }
+.nap-market-status { min-height:1.3rem; font-size:.78rem; font-weight:750; }
+.nap-market-probabilities { display:flex; justify-content:space-between; gap:.65rem; margin-top:.9rem; color:var(--muted); font-size:.75rem; }
+.nap-market-probabilities b { display:block; margin-top:.1rem; color:var(--text); font-size:.96rem; }
+.nap-market-price { margin-top:.8rem; padding-top:.7rem; border-top:1px solid var(--border); color:var(--muted); font-size:.72rem; }
+.nap-market-price b { color:var(--text); font-size:.82rem; }
+.nap-market-book { margin-left:.35rem; color:var(--muted); }
 .nap-sim-leaders { display:grid; grid-template-columns:repeat(5,1fr); gap:.65rem; margin:1rem 0; }
 .nap-sim-leader { display:flex; align-items:center; gap:.65rem; min-width:0; }
 .nap-sim-rank { color:var(--muted); font-size:.75rem; }
@@ -132,6 +142,6 @@ h1, h2, h3, p, label { color: var(--text); }
 div[data-testid="stRadio"] label { padding:.42rem .55rem; border-radius:7px; }
 div[data-testid="stRadio"] label:hover { background:rgba(54,227,154,.07); }
 div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154,.11); border:1px solid rgba(54,227,154,.22); }
-@media (max-width: 760px) { [data-testid="stSidebar"] { min-width:280px; max-width:280px; } .block-container { padding:.8rem .8rem 2rem; } .nap-page-header { display:block; } .nap-refresh { padding:.15rem 0 .7rem; white-space:normal; } .nap-title { font-size:1.65rem; } .nap-game-team { font-size:1rem; gap:.4rem; } .nap-prediction-grid { grid-template-columns:1fr; } .nap-market-row { grid-template-columns:1fr 1fr; } .nap-sim-leaders { grid-template-columns:1fr 1fr; } .nap-roster-kpi { display:none; } .nap-unit-strip { grid-template-columns:1fr; } .nap-formation { grid-template-columns:repeat(7,minmax(82px,1fr)); padding:1rem .7rem; gap:.7rem .4rem; } .nap-formation-player { display:block; } .nap-formation-player img { margin:0 auto .25rem; } .nap-depth-groups { grid-template-columns:1fr; } }
+@media (max-width: 760px) { [data-testid="stSidebar"] { min-width:280px; max-width:280px; } .block-container { padding:.8rem .8rem 2rem; } .nap-page-header { display:block; } .nap-refresh { padding:.15rem 0 .7rem; white-space:normal; } .nap-title { font-size:1.65rem; } .nap-game-team { font-size:1rem; gap:.4rem; } .nap-prediction-grid { grid-template-columns:1fr; } .nap-market-row { grid-template-columns:1fr 1fr; } .nap-market-edge { font-size:1.8rem; } .nap-sim-leaders { grid-template-columns:1fr 1fr; } .nap-roster-kpi { display:none; } .nap-unit-strip { grid-template-columns:1fr; } .nap-formation { grid-template-columns:repeat(7,minmax(82px,1fr)); padding:1rem .7rem; gap:.7rem .4rem; } .nap-formation-player { display:block; } .nap-formation-player img { margin:0 auto .25rem; } .nap-depth-groups { grid-template-columns:1fr; } }
 </style>
 """

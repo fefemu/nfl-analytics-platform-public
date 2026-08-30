@@ -23,5 +23,5 @@
     <text x="1322" y="285" class="x">Streamlit</text><text x="1322" y="325" class="x">Plotly</text><text x="1322" y="405" class="n">Interaktív webes felület</text>
   </g>
   <path d="M300 320H353" class="flow"/><path d="M610 320H663" class="flow"/><path d="M920 320H973" class="flow"/><path d="M1230 320H1283" class="flow"/>
-  <g filter="url(#s)"><rect x="350" y="535" width="900" height="105" rx="16" class="support"/><text x="800" y="575" text-anchor="middle" class="h">Fejlesztés és minőségbiztosítás</text><text x="800" y="610" text-anchor="middle" class="x">pytest · Git · GitHub</text></g>
+  <g filter="url(#s)"><rect x="350" y="535" width="900" height="105" rx="16" class="support"/><text x="800" y="575" text-anchor="middle" class="h">Fejlesztés és automatizált minőségbiztosítás</text><text x="800" y="610" text-anchor="middle" class="x">pytest · Git · GitHub Actions</text></g>
 </svg>

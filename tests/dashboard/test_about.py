@@ -58,6 +58,8 @@ def test_architecture_stays_at_technology_level() -> None:
     assert "raw." not in content
     assert "analytics." not in content
     assert "current_game_predictions" not in content
+    assert "pytest · Git · GitHub Actions" in content
+    assert "automatizált minőségbiztosítás" in content
 
 
 def test_data_model_contains_current_schema_table_counts() -> None:
@@ -65,6 +67,10 @@ def test_data_model_contains_current_schema_table_counts() -> None:
     assert len(set(re.findall(r"raw\.[a-z0-9_]+", content))) == 9
     assert len(set(re.findall(r"processed\.[a-z0-9_]+", content))) == 12
     assert len(set(re.findall(r"analytics\.[a-z0-9_]+", content))) == 42
+    assert "RAW — Forráshű adatok" in content
+    assert "PROCESSED — Tisztított és egységesített adatok" in content
+    assert "ANALYTICS — Feature-ök és modellezési adatok" in content
+    assert "OUTPUT — Publikálható alkalmazási eredmények" in content
 
 
 def test_data_flow_contains_success_and_failure_paths() -> None:
