@@ -19,7 +19,9 @@ def test_hungarian_candidate_card_uses_decimal_odds_without_routing_label() -> N
     markup = _candidate_card(create_candidate(), "HU")
 
     assert "Book A · 2,10" in markup
-    assert "Modell esélye ⓘ" in markup
+    assert "Modell esélye" in markup
+    assert 'class="nap-tooltip-trigger"' in markup
+    assert 'role="tooltip"' in markup
     assert "FALLBACK" not in markup
     assert "PRIMARY" not in markup
 

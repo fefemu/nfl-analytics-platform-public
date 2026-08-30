@@ -6,7 +6,7 @@ from html import escape
 import pandas as pd
 import streamlit as st
 
-from src.dashboard.components import empty_state, team_badge
+from src.dashboard.components import empty_state, team_badge, tooltip_icon
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
     classify_publication_candidates,
@@ -62,9 +62,9 @@ def _candidate_card(row: pd.Series, language: Language) -> str:
       <div class="nap-matchup-meta">{kickoff}</div>
       <div class="nap-candidate-market">{escape(market_display(row))}</div>
       <div class="nap-candidate-grid">
-        <span title="{escape(model_help)}">{model_label} ⓘ <b>{row['model_probability']:.1%}</b></span>
-        <span title="{escape(edge_help)}">Edge ⓘ <b class="nap-positive">{_signed_number(row['probability_edge_percentage_points'], language, ' pp')}</b></span>
-        <span title="{escape(ev_help)}">EV ⓘ <b class="nap-positive">{_signed_number(row['expected_value_percent'], language, '%')}</b></span>
+        <span>{model_label}{tooltip_icon(model_help, accessible_label=model_help)} <b>{row['model_probability']:.1%}</b></span>
+        <span>Edge{tooltip_icon(edge_help, accessible_label=edge_help)} <b class="nap-positive">{_signed_number(row['probability_edge_percentage_points'], language, ' pp')}</b></span>
+        <span>EV{tooltip_icon(ev_help, accessible_label=ev_help, align="right")} <b class="nap-positive">{_signed_number(row['expected_value_percent'], language, '%')}</b></span>
       </div>
       <div class="nap-candidate-footer"><span>{escape(str(row['best_bookmaker_title']))} · {decimal_odds}</span></div>
     </div>

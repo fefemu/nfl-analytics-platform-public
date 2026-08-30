@@ -114,6 +114,12 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-roster-kpi span,.nap-roster-kpi small { color:var(--muted); font-size:.68rem; }
 .nap-roster-kpi strong { display:block; color:var(--green); font-size:1.35rem; }
 .nap-info { color:var(--muted); cursor:help; font-size:.72rem; font-weight:700; }
+.nap-tooltip { position:relative; display:inline-flex; align-items:center; vertical-align:middle; }
+.nap-tooltip-trigger { display:inline-flex; align-items:center; justify-content:center; width:1.55rem; min-width:1.55rem; height:1.55rem; margin:-.25rem 0; padding:0; border:0; border-radius:50%; color:var(--muted); background:transparent; font:inherit; font-size:.76rem; font-weight:800; line-height:1; cursor:help; }
+.nap-tooltip-trigger:hover,.nap-tooltip-trigger:focus-visible { color:var(--blue); background:rgba(66,165,255,.12); outline:2px solid rgba(66,165,255,.55); outline-offset:1px; }
+.nap-tooltip-content { position:absolute; z-index:10020; left:0; bottom:calc(100% + .45rem); display:block; width:max-content; max-width:min(270px,calc(100vw - 2rem)); padding:.55rem .65rem; border:1px solid var(--border); border-radius:7px; color:var(--text); background:#10243a; box-shadow:0 10px 28px rgba(0,0,0,.38); font-size:.72rem; font-weight:500; line-height:1.4; text-align:left; white-space:normal; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .12s ease,transform .12s ease,visibility .12s ease; }
+.nap-tooltip-right .nap-tooltip-content { right:0; left:auto; }
+.nap-tooltip:hover .nap-tooltip-content,.nap-tooltip:focus-within .nap-tooltip-content { opacity:1; visibility:visible; transform:translateY(0); }
 .nap-unit-strip { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; margin:.25rem 0 1rem; }
 .nap-unit-rank { display:flex; align-items:baseline; gap:.35rem; padding:.65rem .8rem; border:1px solid var(--border); border-radius:8px; background:rgba(11,27,46,.72); }
 .nap-unit-rank span { flex:1; color:var(--muted); font-size:.72rem; }
@@ -182,6 +188,8 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
   .nap-formation-player { display:block; }
   .nap-formation-player img { margin:0 auto .25rem; }
   .nap-depth-groups { grid-template-columns:1fr; }
+  .nap-tooltip-trigger { width:2.25rem; min-width:2.25rem; height:2.25rem; margin:-.6rem -.25rem; cursor:pointer; }
+  .nap-tooltip-content { max-width:calc(100vw - 2.5rem); font-size:.78rem; }
 }
 </style>
 """

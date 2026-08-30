@@ -6,7 +6,12 @@ from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
 
-from src.dashboard.components import empty_state, probability_bar, team_badge
+from src.dashboard.components import (
+    empty_state,
+    probability_bar,
+    team_badge,
+    tooltip_icon,
+)
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
     create_matchup_labels,
@@ -162,13 +167,17 @@ def _render_market(
                 '<div class="nap-card nap-market-card">'
                 f'<div class="nap-panel-title">{market_labels[market_key]}</div>'
                 f'<div class="nap-candidate-market">{escape(_preferred_label(offer))}</div>'
-                f'<div class="nap-market-edge {edge_class}" title="{escape(edge_help)}">{edge_text}</div>'
+                f'<div class="nap-market-edge {edge_class}">{edge_text}'
+                f'{tooltip_icon(edge_help, accessible_label=edge_help, align="right")}</div>'
                 f'<div class="nap-market-status {status_class}">{status}</div>'
                 '<div class="nap-market-probabilities">'
-                f'<span title="{escape(model_help)}">{"Modell esélye" if language == "HU" else "Model probability"} ⓘ<b>{model_probability}</b></span>'
-                f'<span title="{escape(market_help)}">{"Piaci esély" if language == "HU" else "Market probability"} ⓘ<b>{market_probability}</b></span>'
+                f'<span>{"Modell esélye" if language == "HU" else "Model probability"}'
+                f'{tooltip_icon(model_help, accessible_label=model_help)}<b>{model_probability}</b></span>'
+                f'<span>{"Piaci esély" if language == "HU" else "Market probability"}'
+                f'{tooltip_icon(market_help, accessible_label=market_help, align="right")}<b>{market_probability}</b></span>'
                 '</div>'
-                f'<div class="nap-market-price" title="{escape(odds_help)}">{"Legjobb odds" if language == "HU" else "Best odds"} ⓘ '
+                f'<div class="nap-market-price">{"Legjobb odds" if language == "HU" else "Best odds"}'
+                f'{tooltip_icon(odds_help, accessible_label=odds_help)} '
                 f'<b>{odds}</b><span class="nap-market-book">{escape(str(offer["best_bookmaker_title"]))}</span></div>'
                 '</div>'
             )

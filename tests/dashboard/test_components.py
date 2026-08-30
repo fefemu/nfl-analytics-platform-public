@@ -1,4 +1,4 @@
-from src.dashboard.components import probability_bar, team_badge
+from src.dashboard.components import probability_bar, team_badge, tooltip_icon
 from src.dashboard.styles import APP_CSS
 
 
@@ -38,3 +38,17 @@ def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None
     assert "z-index:1000000 !important" in mobile_css
     assert "width:2.75rem !important" in mobile_css
     assert "height:2.75rem !important" in mobile_css
+
+
+def test_tooltip_icon_is_touch_and_keyboard_accessible() -> None:
+    markup = tooltip_icon(
+        'Model probability < market probability',
+        accessible_label='Explain "Model probability"',
+        align="right",
+    )
+
+    assert 'class="nap-tooltip nap-tooltip-right"' in markup
+    assert '<button class="nap-tooltip-trigger" type="button"' in markup
+    assert 'aria-label="Explain &quot;Model probability&quot;"' in markup
+    assert 'role="tooltip"' in markup
+    assert "Model probability &lt; market probability" in markup

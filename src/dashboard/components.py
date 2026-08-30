@@ -55,6 +55,25 @@ def status_pill(label: str, ready: bool) -> str:
     return f'<span class="nap-pill {tone}">{escape(label)}</span>'
 
 
+def tooltip_icon(
+    help_text: str,
+    *,
+    accessible_label: str | None = None,
+    align: str = "left",
+) -> str:
+    """Return a hover-, touch- and keyboard-accessible tooltip trigger."""
+
+    safe_alignment = "right" if align == "right" else "left"
+    label = accessible_label or help_text
+    return (
+        f'<span class="nap-tooltip nap-tooltip-{safe_alignment}">'
+        '<button class="nap-tooltip-trigger" type="button" '
+        f'aria-label="{escape(label)}">ⓘ</button>'
+        f'<span class="nap-tooltip-content" role="tooltip">'
+        f'{escape(help_text)}</span></span>'
+    )
+
+
 def team_badge(team_code: str, size: int = 42) -> str:
     brand = get_team_brand(team_code)
     if brand.logo_url:

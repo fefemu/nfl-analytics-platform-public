@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from src.config.nfl_team_mappings import normalize_franchise_code
-from src.dashboard.components import empty_state, team_badge
+from src.dashboard.components import empty_state, team_badge, tooltip_icon
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language
 from src.dashboard.team_branding import get_team_brand
 
@@ -203,7 +203,7 @@ def _render_team_header(team_data: pd.DataFrame, selected: str, language: Langua
         )
         elo_html = (
             '<div class="nap-roster-kpi"><span>Elo rating '
-            f'<b class="nap-info" title="{escape(elo_help)}">ⓘ</b></span>'
+            f'{tooltip_icon(elo_help, accessible_label=elo_help, align="right")}</span>'
             f'<strong>{elo.iloc[0]:.0f}</strong><small>{rank}</small></div>'
         )
     updated_label = "Depth chart frissítve" if language == "HU" else "Depth chart updated"
@@ -274,7 +274,8 @@ def _render_unit_strength(
         if rank is not None:
             cards.append(
                 '<div class="nap-unit-rank"><span>' + escape(label)
-                + f' <b class="nap-info" title="{escape(help_text)}">ⓘ</b></span>'
+                + " " + tooltip_icon(help_text, accessible_label=help_text)
+                + '</span>'
                 + f'<strong>#{rank}</strong><small>/ 32 NFL</small></div>'
             )
     if cards:
