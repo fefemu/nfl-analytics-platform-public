@@ -1,4 +1,5 @@
 from src.dashboard.components import probability_bar, team_badge
+from src.dashboard.styles import APP_CSS
 
 
 def test_known_team_badge_uses_remote_logo_with_fallback() -> None:
@@ -23,3 +24,15 @@ def test_probability_bar_contains_accessible_team_probabilities() -> None:
     assert "BUF 44.3 percent, KC 55.7 percent" in markup
     assert "width:44.300%" in markup
     assert "width:55.700%" in markup
+
+
+def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None:
+    mobile_css = APP_CSS.split("@media (max-width: 760px)", maxsplit=1)[1]
+
+    assert '[data-testid="collapsedControl"]' in mobile_css
+    assert '[data-testid="stSidebarCollapsedControl"]' in mobile_css
+    assert "display:flex !important" in mobile_css
+    assert "position:fixed !important" in mobile_css
+    assert "z-index:1000000 !important" in mobile_css
+    assert "width:2.75rem !important" in mobile_css
+    assert "height:2.75rem !important" in mobile_css

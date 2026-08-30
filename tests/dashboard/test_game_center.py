@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.dashboard.pages.game_center import _hero, _preferred_label
+from src.dashboard.pages.game_center import _edge_status, _hero, _preferred_label
 
 
 def test_game_center_hero_contains_predictions_and_team_logos() -> None:
@@ -34,3 +34,15 @@ def test_preferred_market_label_formats_spread_and_total() -> None:
     assert _preferred_label(pd.Series({
         "market_key": "totals", "outcome_name": "Under", "point": 47.5,
     })) == "Under 47.5"
+
+
+def test_edge_status_distinguishes_positive_negative_and_displayed_zero() -> None:
+    assert _edge_status(18.5, "EN") == (
+        "Positive model edge", "nap-positive", "positive",
+    )
+    assert _edge_status(-19.5, "EN") == (
+        "Negative model edge", "nap-negative", "negative",
+    )
+    assert _edge_status(-0.04, "HU") == (
+        "Nincs modell-előny", "nap-neutral", "neutral",
+    )

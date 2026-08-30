@@ -133,17 +133,7 @@ def _render_market(
                 continue
             offer = by_market[market_key]
             edge = float(offer["probability_edge_percentage_points"])
-            if edge > 0:
-                status = (
-                    "Pozitív modell-előny"
-                    if language == "HU" else "Positive model edge"
-                )
-                status_class = "nap-positive"
-                edge_class = "positive"
-            else:
-                status = "Nincs modell-előny" if language == "HU" else "No model edge"
-                status_class = "nap-negative"
-                edge_class = "negative"
+            status, status_class, edge_class = _edge_status(edge, language)
             model_help = (
                 "A modell által becsült valószínűség az adott kimenetelre."
                 if language == "HU" else "The model-estimated probability of this outcome."
@@ -200,6 +190,29 @@ def _preferred_label(offer: pd.Series) -> str:
     if market_key == "spreads":
         return f"{outcome} {float(point):+g}"
     return f"{outcome} {float(point):g}"
+
+
+def _edge_status(edge: float, language: Language) -> tuple[str, str, str]:
+    """Return a status aligned with the edge value shown to the user."""
+
+    displayed_edge = round(float(edge), 1)
+    if displayed_edge > 0:
+        return (
+            "Pozitív modell-előny" if language == "HU" else "Positive model edge",
+            "nap-positive",
+            "positive",
+        )
+    if displayed_edge < 0:
+        return (
+            "Negatív modell-előny" if language == "HU" else "Negative model edge",
+            "nap-negative",
+            "negative",
+        )
+    return (
+        "Nincs modell-előny" if language == "HU" else "No model edge",
+        "nap-neutral",
+        "neutral",
+    )
 
 
 def render_game_center(
