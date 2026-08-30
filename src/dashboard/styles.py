@@ -145,7 +145,16 @@ div[data-testid="stRadio"] label:hover { background:rgba(54,227,154,.07); }
 div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154,.11); border:1px solid rgba(54,227,154,.22); }
 @media (max-width: 760px) {
   [data-testid="stSidebar"] { min-width:280px; max-width:280px; }
-  [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"] {
+  [data-testid="stHeader"] {
+    display:block !important; visibility:visible !important;
+    min-height:3.5rem !important; pointer-events:none !important;
+  }
+  [data-testid="stToolbar"] {
+    display:flex !important; visibility:visible !important; opacity:1 !important;
+    pointer-events:auto !important;
+  }
+  [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"],
+  [data-testid="stSidebarCollapseButton"] {
     display:flex !important; visibility:visible !important; opacity:1 !important;
     position:fixed !important; top:.55rem !important; left:.55rem !important;
     z-index:1000000 !important; width:2.75rem !important; height:2.75rem !important;
@@ -153,7 +162,8 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
     border:1px solid var(--border) !important; border-radius:9px !important;
     background:rgba(7,21,37,.96) !important; box-shadow:0 8px 24px rgba(0,0,0,.35) !important;
   }
-  [data-testid="collapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button {
+  [data-testid="collapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button,
+  [data-testid="stSidebarCollapseButton"] button {
     display:flex !important; visibility:visible !important; opacity:1 !important;
     width:100% !important; height:100% !important; color:var(--text) !important;
   }

@@ -31,6 +31,8 @@ def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None
 
     assert '[data-testid="collapsedControl"]' in mobile_css
     assert '[data-testid="stSidebarCollapsedControl"]' in mobile_css
+    assert '[data-testid="stSidebarCollapseButton"]' in mobile_css
+    assert '[data-testid="stToolbar"]' in mobile_css
     assert "display:flex !important" in mobile_css
     assert "position:fixed !important" in mobile_css
     assert "z-index:1000000 !important" in mobile_css
