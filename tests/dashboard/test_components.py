@@ -59,6 +59,18 @@ def test_probability_trend_never_renders_signed_zero() -> None:
     assert "pp" not in positive_zero + negative_zero
 
 
+def test_probability_trend_supports_inward_tooltip_alignment() -> None:
+    left = probability_trend_badge(
+        "UNCHANGED", 0.0, "EN", compact=True, tooltip_align="left"
+    )
+    right = probability_trend_badge(
+        "UNCHANGED", 0.0, "EN", compact=True, tooltip_align="right"
+    )
+
+    assert "nap-tooltip-left" in left
+    assert "nap-tooltip-right" in right
+
+
 def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None:
     mobile_css = APP_CSS.split("@media (max-width: 760px)", maxsplit=1)[1]
 

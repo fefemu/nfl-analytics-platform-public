@@ -35,3 +35,5 @@ def test_hungarian_matchup_card_is_localized_and_links_to_game_center() -> None:
     assert "↑ +1,2%" in markup
     assert "Csökkent" not in markup
     assert "Növekedett" not in markup
+    assert markup.count("nap-tooltip-left") == 1
+    assert markup.count("nap-tooltip-right") == 1

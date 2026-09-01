@@ -45,7 +45,10 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-muted { color:var(--muted); font-size:.86rem; }
 .nap-divider { border-top:1px solid var(--border); margin:1rem 0; }
 .nap-empty { padding:2.4rem 1rem; text-align:center; color:var(--muted); }
-.nap-matchup-card { margin-bottom:1rem; }
+.nap-matchup-card { position:relative; z-index:1; overflow:visible; margin-bottom:1rem; }
+.nap-matchup-card:hover,.nap-matchup-card:focus-within { z-index:10010; }
+[data-testid="stColumn"]:has(.nap-matchup-card:hover),
+[data-testid="stColumn"]:has(.nap-matchup-card:focus-within) { z-index:10010; }
 .nap-matchup-link { color:inherit; display:block; text-decoration:none !important; }
 .nap-matchup-link .nap-matchup-card { transition:border-color .16s ease, transform .16s ease, box-shadow .16s ease; }
 .nap-matchup-link:hover .nap-matchup-card { border-color:rgba(66,165,255,.62); transform:translateY(-2px); box-shadow:0 18px 44px rgba(0,0,0,.24); }

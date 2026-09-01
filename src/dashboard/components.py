@@ -130,6 +130,7 @@ def probability_trend_badge(
     compact: bool = False,
     previous_probability: object = None,
     current_probability: object = None,
+    tooltip_align: str = "right",
 ) -> str:
     """Render an already classified probability trend with clear semantics."""
 
@@ -195,7 +196,7 @@ def probability_trend_badge(
         visible = f"{symbols.get(normalized, '•')} {label} {value}"
     return (
         f'<span class="nap-probability-trend {tones.get(normalized, "new")}">'
-        f'{escape(visible)}{tooltip_icon(tooltip, accessible_label=tooltip, align="right")}</span>'
+        f'{escape(visible)}{tooltip_icon(tooltip, accessible_label=tooltip, align=tooltip_align)}</span>'
     )
 
 

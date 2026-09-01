@@ -32,12 +32,14 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
         compact=True,
         previous_probability=row.get("away_previous_win_probability"),
         current_probability=row.get("away_win_probability"),
+        tooltip_align="left",
     )
     home_trend = probability_trend_badge(
         row.get("home_probability_trend"), row.get("home_probability_change_pp"), language,
         compact=True,
         previous_probability=row.get("home_previous_win_probability"),
         current_probability=row.get("home_win_probability"),
+        tooltip_align="right",
     )
     return f"""
     <div class="nap-card nap-matchup-card">
