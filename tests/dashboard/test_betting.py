@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.dashboard.pages.betting import _candidate_card, _filter_candidates
+from src.dashboard.pages.betting import _candidate_card, _filter_candidates, _signed_number
 
 
 def create_candidate() -> pd.Series:
@@ -24,6 +24,14 @@ def test_hungarian_candidate_card_uses_decimal_odds_without_routing_label() -> N
     assert 'role="tooltip"' in markup
     assert "FALLBACK" not in markup
     assert "PRIMARY" not in markup
+    assert "+8,0%" in markup
+    assert "százalékpont-különbséget" in markup
+    assert " pp" not in markup
+
+
+def test_signed_number_normalizes_displayed_zero() -> None:
+    assert _signed_number(0.04, "EN", "%") == "0.0%"
+    assert _signed_number(-0.04, "EN", "%") == "0.0%"
 
 
 def test_candidate_filters_apply_market_threshold_and_matchup() -> None:

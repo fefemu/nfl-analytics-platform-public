@@ -42,9 +42,12 @@ def _candidate_card(row: pd.Series, language: Language) -> str:
         "The model-estimated probability that the selected outcome occurs."
     )
     edge_help = (
-        "A modell és a piac által becsült valószínűség különbsége."
+        "A modell becsült valószínűsége és a margin nélküli piaci valószínűség "
+        "közötti abszolút különbség. A megjelenített % érték százalékpont-különbséget "
+        "jelent, nem relatív százalékos változást."
         if language == "HU" else
-        "Difference between model probability and the bookmaker-margin-free market probability."
+        "Absolute difference between the model probability and the no-vig market probability. "
+        "The displayed % value represents a percentage-point difference, not relative percentage change."
     )
     ev_help = (
         "A modell becslése alapján számított várható érték az adott oddson."
@@ -63,7 +66,7 @@ def _candidate_card(row: pd.Series, language: Language) -> str:
       <div class="nap-candidate-market">{escape(market_display(row))}</div>
       <div class="nap-candidate-grid">
         <span>{model_label}{tooltip_icon(model_help, accessible_label=model_help)} <b>{row['model_probability']:.1%}</b></span>
-        <span>Edge{tooltip_icon(edge_help, accessible_label=edge_help)} <b class="nap-positive">{_signed_number(row['probability_edge_percentage_points'], language, ' pp')}</b></span>
+        <span>Edge{tooltip_icon(edge_help, accessible_label=edge_help)} <b class="nap-positive">{_signed_number(row['probability_edge_percentage_points'], language, '%')}</b></span>
         <span>EV{tooltip_icon(ev_help, accessible_label=ev_help, align="right")} <b class="nap-positive">{_signed_number(row['expected_value_percent'], language, '%')}</b></span>
       </div>
       <div class="nap-candidate-footer"><span>{escape(str(row['best_bookmaker_title']))} · {decimal_odds}</span></div>
@@ -72,8 +75,11 @@ def _candidate_card(row: pd.Series, language: Language) -> str:
 
 
 def _signed_number(value: float, language: Language, suffix: str) -> str:
-    sign = "+" if float(value) >= 0 else ""
-    return f"{sign}{_number(value, language)}{suffix}"
+    numeric = float(value)
+    if round(numeric, 1) == 0:
+        numeric = 0.0
+    sign = "+" if numeric > 0 else ""
+    return f"{sign}{_number(numeric, language)}{suffix}"
 
 
 def _filter_candidates(
@@ -229,8 +235,11 @@ def render_betting_board(
     detail["matchup"] = detail["away_team"] + " @ " + detail["home_team"]
     detail["market"] = detail.apply(market_display, axis=1)
     detail["decimal_odds"] = detail["best_decimal_odds"].map(lambda value: format_decimal_odds(value, language))
+    detail["edge_display"] = detail["probability_edge_percentage_points"].map(
+        lambda value: _signed_number(value, language, "%")
+    )
     st.dataframe(
-        detail[["matchup", "market", "model_probability", "probability_edge_percentage_points",
+        detail[["matchup", "market", "model_probability", "edge_display",
                 "expected_value_percent", "decimal_odds", "best_bookmaker_title", "bookmaker_count"]],
         width="stretch",
         hide_index=True,
@@ -244,9 +253,16 @@ def render_betting_board(
                 "Modell %" if language == "HU" else "Model %", format="percent",
                 help=("A modell által becsült valószínűség az adott kimenetelre." if language == "HU" else "Model-estimated probability of the outcome."),
             ),
-            "probability_edge_percentage_points": st.column_config.NumberColumn(
-                "Edge", format="%.1f",
-                help=("A modell és a margin nélküli piac valószínűségének különbsége, százalékpontban." if language == "HU" else "Model probability minus no-vig market probability, in percentage points."),
+            "edge_display": st.column_config.TextColumn(
+                "Edge",
+                help=(
+                    "A modell becsült valószínűsége és a margin nélküli piaci valószínűség "
+                    "közötti abszolút különbség. A megjelenített % érték százalékpont-különbséget "
+                    "jelent, nem relatív százalékos változást."
+                    if language == "HU" else
+                    "Absolute difference between the model probability and the no-vig market probability. "
+                    "The displayed % value represents a percentage-point difference, not relative percentage change."
+                ),
             ),
             "expected_value_percent": st.column_config.NumberColumn(
                 "EV", format="%.1f",

@@ -162,8 +162,12 @@ def _render_market(
                 if language == "HU" else "The market probability after removing bookmaker margin."
             )
             edge_help = (
-                "A modell és a no-vig piaci valószínűség különbsége százalékpontban."
-                if language == "HU" else "Model probability minus no-vig market probability, in percentage points."
+                "A modell becsült valószínűsége és a margin nélküli piaci valószínűség "
+                "közötti abszolút különbség. A megjelenített % érték százalékpont-különbséget "
+                "jelent, nem relatív százalékos változást."
+                if language == "HU" else
+                "Absolute difference between the model probability and the no-vig market probability. "
+                "The displayed % value represents a percentage-point difference, not relative percentage change."
             )
             odds_help = (
                 "Az adott kimenetelhez jelenleg elérhető legjobb ár a betöltött fogadóirodák között."
@@ -172,7 +176,7 @@ def _render_market(
             odds = format_decimal_odds(offer["best_decimal_odds"], language)
             model_probability = f'{offer["model_probability"]:.1%}'
             market_probability = f'{offer["market_probability"]:.1%}'
-            edge_text = f"{edge:+.1f} pp"
+            edge_text = f"{edge:+.1f}%" if round(edge, 1) != 0 else "0.0%"
             if language == "HU":
                 model_probability = model_probability.replace(".", ",")
                 market_probability = market_probability.replace(".", ",")

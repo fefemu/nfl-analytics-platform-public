@@ -56,3 +56,11 @@ def test_edge_status_distinguishes_positive_negative_and_displayed_zero() -> Non
     assert _edge_status(-0.04, "HU") == (
         "Nincs modell-előny", "nap-neutral", "neutral",
     )
+
+
+def test_game_center_source_uses_percent_for_visible_edge() -> None:
+    from pathlib import Path
+
+    source = Path("src/dashboard/pages/game_center.py").read_text(encoding="utf-8")
+    assert 'edge_text = f"{edge:+.1f}%"' in source
+    assert 'edge_text = f"{edge:+.1f} pp"' not in source
