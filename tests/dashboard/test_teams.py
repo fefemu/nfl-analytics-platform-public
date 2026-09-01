@@ -7,6 +7,7 @@ from src.dashboard.pages.teams import (
     prepare_current_rosters,
     select_starting_lineup,
 )
+from src.dashboard.view_models import prepare_team_schedule
 
 
 def test_prepare_current_rosters_normalizes_franchise_and_depth() -> None:
@@ -68,3 +69,49 @@ def test_defense_lineup_excludes_twelfth_nickel_slot(group: str) -> None:
 def test_unknown_lineup_unit_is_rejected() -> None:
     with pytest.raises(ValueError, match="offense or defense"):
         select_starting_lineup(pd.DataFrame(), "special teams")
+
+
+def _team_schedule_rows() -> pd.DataFrame:
+    rows = []
+    for week in range(1, 19):
+        if week == 7:
+            continue
+        rows.append({
+            "season": 2026,
+            "week": week,
+            "gameday": f"2026-09-{min(week + 6, 28):02d}",
+            "gametime": "13:00",
+            "team": "KC",
+            "opponent": "BUF" if week == 1 else "DEN",
+            "is_home": week % 2 == 0,
+            "team_score": 27 if week == 1 else None,
+            "opponent_score": 20 if week == 1 else None,
+            "is_completed": week == 1,
+            "opponent_elo": 1540.0,
+            "current_week": 2,
+        })
+    return pd.DataFrame(rows)
+
+
+def test_team_schedule_is_ordered_and_inserts_bye_week() -> None:
+    result = prepare_team_schedule(_team_schedule_rows(), "KC")
+
+    assert result["week"].tolist() == list(range(1, 19))
+    bye = result.loc[result["week"].eq(7)].iloc[0]
+    assert bool(bye["is_bye"])
+    assert bye["schedule_state"] == "BYE"
+    assert pd.isna(bye["opponent"])
+
+
+def test_team_schedule_represents_home_away_and_game_states() -> None:
+    result = prepare_team_schedule(_team_schedule_rows(), "KC")
+
+    completed = result.loc[result["week"].eq(1)].iloc[0]
+    current = result.loc[result["week"].eq(2)].iloc[0]
+    upcoming = result.loc[result["week"].eq(3)].iloc[0]
+    assert completed["venue"] == "@"
+    assert completed["schedule_state"] == "COMPLETED"
+    assert current["venue"] == "vs"
+    assert current["schedule_state"] == "CURRENT"
+    assert bool(current["is_current_week"])
+    assert upcoming["schedule_state"] == "UPCOMING"

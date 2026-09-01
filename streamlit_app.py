@@ -138,7 +138,11 @@ elif page_key == "GAMES":
 elif page_key == "BETTING":
     render_betting_board(repository.load_current_betting_board(), language)
 elif page_key == "TEAMS":
-    render_teams(repository.load_current_team_rosters(), language)
+    render_teams(
+        repository.load_current_team_rosters(),
+        language=language,
+        schedules=repository.load_current_team_schedule(),
+    )
 elif page_key == "SIMULATOR":
     simulation_summary, win_distribution, elo_benchmark = (
         repository.load_season_simulator()

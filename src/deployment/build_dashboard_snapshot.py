@@ -48,10 +48,12 @@ DASHBOARD_TABLES = (
     SnapshotTable("analytics", "model_blend_scorecard"),
     SnapshotTable("analytics", "game_modeling_dataset"),
     SnapshotTable("analytics", "refresh_run_history", required=False),
+    SnapshotTable("analytics", "current_elo_ratings", required=False),
     SnapshotTable("raw", "depth_charts_espn"),
     SnapshotTable("raw", "player_directory"),
     SnapshotTable("raw", "injury_reports"),
     SnapshotTable("processed", "external_nfelo_game_ratings"),
+    SnapshotTable("processed", "schedule"),
     SnapshotTable(
         "processed", "external_nfelounits_units", required=False
     ),

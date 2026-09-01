@@ -147,6 +147,20 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-depth-player > span { color:var(--muted); font-size:.68rem; text-align:center; }
 .nap-depth-player strong { color:var(--text); font-size:.76rem; }
 .nap-depth-player small { color:var(--muted); font-size:.65rem; }
+.nap-schedule-table { margin:.65rem 0 1rem; overflow:visible; border:1px solid var(--border); border-radius:10px; background:rgba(11,27,46,.72); }
+.nap-schedule-header,.nap-schedule-row { display:grid; grid-template-columns:.55fr 1fr 2.4fr .65fr 1fr 1.25fr; gap:.65rem; align-items:center; padding:.65rem .8rem; }
+.nap-schedule-header { color:var(--muted); background:rgba(255,255,255,.025); font-size:.67rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.nap-schedule-row { min-height:3.2rem; border-top:1px solid var(--border); color:var(--text); font-size:.78rem; }
+.nap-schedule-row:hover { background:rgba(66,165,255,.045); }
+.nap-schedule-opponent { display:flex; align-items:center; gap:.55rem; min-width:0; }
+.nap-schedule-opponent strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nap-schedule-date,.nap-schedule-venue,.nap-schedule-elo { color:var(--muted); }
+.nap-schedule-status { justify-self:start; padding:.22rem .45rem; border-radius:999px; background:rgba(255,255,255,.05); font-size:.69rem; font-weight:800; }
+.nap-schedule-completed .nap-schedule-status { color:var(--blue); }
+.nap-schedule-current { border-left:3px solid var(--green); background:rgba(54,227,154,.07); }
+.nap-schedule-current .nap-schedule-status { color:var(--green); background:rgba(54,227,154,.12); }
+.nap-schedule-bye { background:rgba(255,194,71,.055); }
+.nap-schedule-bye .nap-schedule-status,.nap-schedule-bye-label { color:#ffc247; }
 div[data-testid="stRadio"] label { padding:.42rem .55rem; border-radius:7px; }
 div[data-testid="stRadio"] label:hover { background:rgba(54,227,154,.07); }
 div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154,.11); border:1px solid rgba(54,227,154,.22); }
@@ -189,6 +203,16 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
   .nap-formation-player { display:block; }
   .nap-formation-player img { margin:0 auto .25rem; }
   .nap-depth-groups { grid-template-columns:1fr; }
+  .nap-schedule-table { border:0; background:transparent; }
+  .nap-schedule-header { display:none; }
+  .nap-schedule-row { grid-template-columns:2.3rem minmax(0,1fr) auto; grid-template-areas:"week opponent status" "week date venue"; gap:.25rem .5rem; margin-bottom:.5rem; padding:.65rem; border:1px solid var(--border); border-radius:8px; background:rgba(11,27,46,.72); }
+  .nap-schedule-week { grid-area:week; align-self:center; color:var(--muted); }
+  .nap-schedule-date { grid-area:date; }
+  .nap-schedule-opponent { grid-area:opponent; }
+  .nap-schedule-venue { grid-area:venue; justify-self:end; }
+  .nap-schedule-status { grid-area:status; justify-self:end; white-space:nowrap; }
+  .nap-schedule-elo { display:none; }
+  .nap-schedule-current { border-left:3px solid var(--green); }
   .nap-tooltip-trigger { width:2.25rem; min-width:2.25rem; height:2.25rem; margin:-.6rem -.25rem; cursor:pointer; }
   .nap-tooltip-content { max-width:calc(100vw - 2.5rem); font-size:.78rem; }
 }

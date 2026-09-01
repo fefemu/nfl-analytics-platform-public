@@ -9,6 +9,7 @@ from src.config.nfl_team_mappings import normalize_franchise_code
 from src.dashboard.components import empty_state, team_badge, tooltip_icon
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language
 from src.dashboard.team_branding import get_team_brand
+from src.dashboard.view_models import prepare_team_schedule
 
 
 DIVISIONS = {
@@ -282,7 +283,86 @@ def _render_unit_strength(
         st.markdown('<div class="nap-unit-strip">' + "".join(cards) + "</div>", unsafe_allow_html=True)
 
 
-def render_teams(rosters: pd.DataFrame, language: Language = DEFAULT_LANGUAGE) -> None:
+def _schedule_result(row: pd.Series, language: Language) -> str:
+    if bool(row["is_bye"]):
+        return "PIHENŐHÉT" if language == "HU" else "BYE WEEK"
+    if bool(row["is_completed"]):
+        team_score = int(row["team_score"])
+        opponent_score = int(row["opponent_score"])
+        outcome = "W" if team_score > opponent_score else "L" if team_score < opponent_score else "T"
+        return f"{outcome} {team_score}–{opponent_score}"
+    return (
+        "AKTUÁLIS HÉT" if language == "HU" else "CURRENT WEEK"
+    ) if bool(row["is_current_week"]) else (
+        "HAMAROSAN" if language == "HU" else "UPCOMING"
+    )
+
+
+def _render_team_schedule(
+    schedules: pd.DataFrame,
+    selected: str,
+    language: Language,
+) -> None:
+    title = "Csapat programja" if language == "HU" else "Team Schedule"
+    st.markdown(f"### {title}")
+    prepared = prepare_team_schedule(schedules, selected)
+    if prepared.empty:
+        empty_state(
+            "Schedule unavailable" if language == "EN" else "A program nem érhető el",
+            "The current regular-season schedule is not present in the dashboard snapshot."
+            if language == "EN" else
+            "Az aktuális alapszakasz programja nem található a dashboard-adatállapotban.",
+        )
+        return
+
+    headers = (
+        ("Week", "Date", "Opponent", "Venue", "Opponent Elo", "Result / status")
+        if language == "EN" else
+        ("Hét", "Dátum", "Ellenfél", "Helyszín", "Ellenfél Elo", "Eredmény / állapot")
+    )
+    rows = []
+    for _, row in prepared.iterrows():
+        state = str(row["schedule_state"]).lower()
+        current = " nap-schedule-current" if bool(row["is_current_week"]) else ""
+        if bool(row["is_bye"]):
+            opponent_html = '<strong class="nap-schedule-bye-label">BYE WEEK</strong>'
+            date_text = "—"
+            venue = "—"
+            elo_text = "—"
+        else:
+            opponent = str(row["opponent"])
+            opponent_html = (
+                f'{team_badge(opponent, 28)}<strong>{escape(get_team_brand(opponent).display_name)}</strong>'
+            )
+            date = pd.to_datetime(row["gameday"], errors="coerce")
+            date_text = date.strftime("%Y.%m.%d.") if language == "HU" else date.strftime("%b %d")
+            venue = str(row["venue"])
+            elo = pd.to_numeric(pd.Series([row["opponent_elo"]]), errors="coerce").iloc[0]
+            elo_text = "—" if pd.isna(elo) else f"{elo:.0f}"
+        result = _schedule_result(row, language)
+        rows.append(
+            f'<div class="nap-schedule-row nap-schedule-{state}{current}">'
+            f'<span class="nap-schedule-week"><b>{int(row["week"])}</b></span>'
+            f'<span class="nap-schedule-date">{escape(date_text)}</span>'
+            f'<span class="nap-schedule-opponent">{opponent_html}</span>'
+            f'<span class="nap-schedule-venue">{escape(venue)}</span>'
+            f'<span class="nap-schedule-elo">{escape(elo_text)}</span>'
+            f'<span class="nap-schedule-status">{escape(result)}</span>'
+            '</div>'
+        )
+    st.markdown(
+        '<div class="nap-schedule-table"><div class="nap-schedule-header">'
+        + "".join(f"<span>{escape(header)}</span>" for header in headers)
+        + '</div>' + "".join(rows) + '</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_teams(
+    rosters: pd.DataFrame,
+    language: Language = DEFAULT_LANGUAGE,
+    schedules: pd.DataFrame | None = None,
+) -> None:
     """Render the team profile, formation and full depth-chart views."""
 
     data = prepare_current_rosters(rosters)
@@ -317,6 +397,11 @@ def render_teams(rosters: pd.DataFrame, language: Language = DEFAULT_LANGUAGE) -
     with defense:
         _render_unit_strength(team_data, "defense", language)
         _render_formation(team_data, "defense", language) if view == "STARTING" else _render_full_depth(team_data, "defense")
+    _render_team_schedule(
+        pd.DataFrame() if schedules is None else schedules,
+        selected,
+        language,
+    )
     st.caption(
         "Forrás: nflverse/ESPN depth chart, nflverse játékos-adatbázis és "
         "sérülésjelentések; nfelo Elo; nfelounits unit ratingek."

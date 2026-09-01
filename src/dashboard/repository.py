@@ -384,6 +384,83 @@ class DashboardRepository:
         finally:
             connection.close()
 
+    def load_current_team_schedule(self) -> pd.DataFrame:
+        """Load the current regular-season schedule in a team-centric shape."""
+
+        if not self.database_file.is_file():
+            return pd.DataFrame()
+        connection = self._connect()
+        try:
+            source_tables = {
+                (row[0], row[1])
+                for row in connection.execute(
+                    "SELECT table_schema, table_name FROM information_schema.tables"
+                ).fetchall()
+            }
+            if ("processed", "schedule") not in source_tables:
+                return pd.DataFrame()
+            has_elo = ("analytics", "current_elo_ratings") in source_tables
+            elo_cte = """
+                , elo AS (
+                    SELECT CASE team WHEN 'OAK' THEN 'LV'
+                               WHEN 'LAR' THEN 'LA' ELSE team END AS team,
+                           elo_rating
+                    FROM analytics.current_elo_ratings
+                )
+            """ if has_elo else ""
+            elo_join = "LEFT JOIN elo ON games.opponent = elo.team" if has_elo else ""
+            elo_field = (
+                "elo.elo_rating AS opponent_elo" if has_elo
+                else "CAST(NULL AS DOUBLE) AS opponent_elo"
+            )
+            return connection.execute(
+                f"""
+                WITH current_schedule AS (
+                    SELECT *
+                    FROM processed.schedule
+                    WHERE season = (
+                        SELECT MAX(season) FROM processed.schedule
+                        WHERE game_type = 'REG'
+                    )
+                      AND game_type = 'REG'
+                ), team_games AS (
+                    SELECT season, week, gameday, gametime,
+                           CASE home_team WHEN 'OAK' THEN 'LV'
+                               WHEN 'LAR' THEN 'LA' ELSE home_team END AS team,
+                           CASE away_team WHEN 'OAK' THEN 'LV'
+                               WHEN 'LAR' THEN 'LA' ELSE away_team END AS opponent,
+                           TRUE AS is_home,
+                           home_score AS team_score,
+                           away_score AS opponent_score,
+                           is_completed
+                    FROM current_schedule
+                    UNION ALL
+                    SELECT season, week, gameday, gametime,
+                           CASE away_team WHEN 'OAK' THEN 'LV'
+                               WHEN 'LAR' THEN 'LA' ELSE away_team END AS team,
+                           CASE home_team WHEN 'OAK' THEN 'LV'
+                               WHEN 'LAR' THEN 'LA' ELSE home_team END AS opponent,
+                           FALSE AS is_home,
+                           away_score AS team_score,
+                           home_score AS opponent_score,
+                           is_completed
+                    FROM current_schedule
+                ), current_week AS (
+                    SELECT MIN(week) AS week
+                    FROM current_schedule
+                    WHERE is_completed = FALSE
+                )
+                {elo_cte}
+                SELECT games.*, {elo_field}, current_week.week AS current_week
+                FROM team_games AS games
+                CROSS JOIN current_week
+                {elo_join}
+                ORDER BY games.team, games.week, games.gameday, games.gametime
+                """
+            ).fetchdf()
+        finally:
+            connection.close()
+
     def load_game_center_games(self) -> pd.DataFrame:
         """Load matchup predictions plus optional public narrative fields."""
 

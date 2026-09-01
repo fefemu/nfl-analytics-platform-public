@@ -287,6 +287,87 @@ def select_current_week(games: pd.DataFrame) -> int | None:
     return int(weeks.min()) if not weeks.empty else None
 
 
+TEAM_SCHEDULE_REQUIRED = {
+    "season", "week", "gameday", "gametime", "team", "opponent",
+    "is_home", "team_score", "opponent_score", "is_completed",
+    "opponent_elo", "current_week",
+}
+
+
+def prepare_team_schedule(
+    schedule: pd.DataFrame,
+    team: str,
+    regular_season_weeks: int = 18,
+) -> pd.DataFrame:
+    """Return one ordered team schedule with an explicit regular-season BYE row."""
+
+    missing = sorted(TEAM_SCHEDULE_REQUIRED - set(schedule.columns))
+    if missing:
+        raise ValueError("Team schedule is missing columns: " + ", ".join(missing))
+    if schedule.empty:
+        return schedule.copy()
+
+    result = schedule.loc[schedule["team"].astype(str).eq(str(team))].copy()
+    if result.empty:
+        return result
+    result["week"] = pd.to_numeric(result["week"], errors="coerce")
+    result = result.dropna(subset=["week"])
+    result["week"] = result["week"].astype(int)
+    result = result.loc[result["week"].between(1, regular_season_weeks)]
+    result = result.sort_values(["week", "gameday", "gametime"], kind="stable")
+    result = result.drop_duplicates("week", keep="first")
+
+    current_values = pd.to_numeric(result["current_week"], errors="coerce").dropna()
+    current_week = int(current_values.iloc[0]) if not current_values.empty else None
+    season = int(pd.to_numeric(result["season"], errors="coerce").dropna().max())
+    rows: list[dict[str, object]] = []
+    indexed = result.set_index("week", drop=False)
+    for week in range(1, regular_season_weeks + 1):
+        if week not in indexed.index:
+            rows.append({
+                "season": season,
+                "week": week,
+                "gameday": pd.NaT,
+                "gametime": None,
+                "team": team,
+                "opponent": None,
+                "is_home": None,
+                "team_score": None,
+                "opponent_score": None,
+                "is_completed": False,
+                "opponent_elo": None,
+                "current_week": current_week,
+                "is_bye": True,
+            })
+        else:
+            row = indexed.loc[week]
+            if isinstance(row, pd.DataFrame):
+                row = row.iloc[0]
+            values = row.to_dict()
+            values["is_bye"] = False
+            rows.append(values)
+
+    prepared = pd.DataFrame(rows).sort_values("week", kind="stable").reset_index(drop=True)
+    prepared["is_completed"] = prepared["is_completed"].fillna(False).astype(bool)
+    prepared["is_current_week"] = (
+        prepared["current_week"].notna()
+        & prepared["week"].eq(prepared["current_week"])
+    )
+    prepared["venue"] = np.where(
+        prepared["is_bye"], "", np.where(prepared["is_home"].fillna(False), "vs", "@")
+    )
+    prepared["schedule_state"] = np.select(
+        [
+            prepared["is_bye"],
+            prepared["is_completed"],
+            prepared["is_current_week"],
+        ],
+        ["BYE", "COMPLETED", "CURRENT"],
+        default="UPCOMING",
+    )
+    return prepared
+
+
 def select_weekly_highlights(
     week_games: pd.DataFrame,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
