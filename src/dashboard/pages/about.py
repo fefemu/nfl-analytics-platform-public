@@ -342,13 +342,15 @@ def _automatic_refresh(language: Language) -> None:
             "megszakad, és a platform továbbra is az utolsó sikeresen validált "
             "adatállapotot használja."
         )
-        schedule = (("Kedd", "08:00"), ("Csütörtök", "15:00"), ("Vasárnap", "15:00"))
+        schedule = (("Kedd", "08:00"), ("Csütörtök", "15:00"), ("Vasárnap", "09:00"))
         footer = (
             "Az időzített futások mellett a frissítés manuálisan is elindítható "
             "GitHub Actionsből. A jobb felső sarokban látható „Adatok frissítve” "
-            "időpont mindig az utolsó sikeresen publikált adatállapotot jelzi."
+            "időpont mindig az utolsó sikeresen publikált adatállapotot jelzi. "
+            "A feltüntetett időpontok célidők; a GitHub Actions tényleges indulása "
+            "a szolgáltatás terhelésétől függően késhet."
         )
-        zone = "budapesti idő"
+        zone = "célidő · Budapest"
     else:
         st.write(
             "Data and forecasts are refreshed automatically with GitHub Actions three "
@@ -361,13 +363,14 @@ def _automatic_refresh(language: Language) -> None:
             "critical failure stops publication, while the platform continues serving the "
             "latest successfully validated data state."
         )
-        schedule = (("Tuesday", "08:00"), ("Thursday", "15:00"), ("Sunday", "15:00"))
+        schedule = (("Tuesday", "08:00"), ("Thursday", "15:00"), ("Sunday", "09:00"))
         footer = (
             "The full refresh can also be started manually from GitHub Actions. The "
             "\"Data updated\" timestamp in the top-right corner always identifies the "
-            "latest successfully published data state."
+            "latest successfully published data state. Times shown are targets; the "
+            "actual GitHub Actions start can be delayed by service load."
         )
-        zone = "Budapest time"
+        zone = "target · Budapest"
     columns = st.columns(3)
     for column, (day, time) in zip(columns, schedule, strict=True):
         with column:
