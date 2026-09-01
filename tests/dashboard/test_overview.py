@@ -17,6 +17,10 @@ def test_hungarian_matchup_card_is_localized_and_links_to_game_center() -> None:
         "implied_home_score": 26.7,
         "predicted_home_margin": 4.1,
         "predicted_total_points": 49.3,
+        "away_probability_trend": "DECREASE",
+        "away_probability_change_pp": -1.2,
+        "home_probability_trend": "INCREASE",
+        "home_probability_change_pp": 1.2,
     })
 
     markup = _matchup_card(row, "HU")
@@ -25,3 +29,5 @@ def test_hungarian_matchup_card_is_localized_and_links_to_game_center() -> None:
     assert "1. HÉT · 2026.09.11. · 02:20" in markup
     assert "Várt eredmény" in markup
     assert "22,6 – 26,7" in markup
+    assert "↓ −1,2 pp" in markup
+    assert "↑ +1,2 pp" in markup

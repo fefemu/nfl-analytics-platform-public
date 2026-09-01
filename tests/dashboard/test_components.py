@@ -1,4 +1,9 @@
-from src.dashboard.components import probability_bar, team_badge, tooltip_icon
+from src.dashboard.components import (
+    probability_bar,
+    probability_trend_badge,
+    team_badge,
+    tooltip_icon,
+)
 from src.dashboard.styles import APP_CSS
 
 
@@ -24,6 +29,18 @@ def test_probability_bar_contains_accessible_team_probabilities() -> None:
     assert "BUF 44.3 percent, KC 55.7 percent" in markup
     assert "width:44.300%" in markup
     assert "width:55.700%" in markup
+
+
+def test_probability_trend_badge_localizes_direction_and_disclaimer() -> None:
+    increase = probability_trend_badge("INCREASE", 1.24, "HU")
+    new = probability_trend_badge("NEW", None, "EN")
+    compact_new = probability_trend_badge("NEW", None, "HU", compact=True)
+
+    assert "↑ Nőtt +1,2 pp" in increase
+    assert "nem fogadási ajánlás" in increase
+    assert "New prediction" in new
+    assert "Új előrejelzés" in compact_new
+    assert "0.0" not in new
 
 
 def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None:

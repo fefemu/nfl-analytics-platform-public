@@ -9,6 +9,7 @@ import streamlit as st
 from src.dashboard.components import (
     empty_state,
     probability_bar,
+    probability_trend_badge,
     team_badge,
     tooltip_icon,
 )
@@ -31,6 +32,12 @@ def _hero(row: pd.Series, language: Language = DEFAULT_LANGUAGE) -> str:
     score_label = "VÁRHATÓ EREDMÉNY" if language == "HU" else "MODEL SCORE"
     margin_label = "VÁRHATÓ KÜLÖNBSÉG" if language == "HU" else "HOME MARGIN"
     total_label = "VÁRHATÓ ÖSSZPONTSZÁM" if language == "HU" else "MODEL TOTAL"
+    away_trend = probability_trend_badge(
+        row.get("away_probability_trend"), row.get("away_probability_change_pp"), language,
+    )
+    home_trend = probability_trend_badge(
+        row.get("home_probability_trend"), row.get("home_probability_change_pp"), language,
+    )
     return f"""
     <div class="nap-card nap-game-hero">
       <div class="nap-game-teams">
@@ -39,6 +46,7 @@ def _hero(row: pd.Series, language: Language = DEFAULT_LANGUAGE) -> str:
         <div class="nap-game-team home"><span>{home}</span>{team_badge(home, 58)}</div>
       </div>
       {probability_bar(away, row['away_win_probability'], home, row['home_win_probability'])}
+      <div class="nap-game-trends"><span>{away_trend}</span><span>{home_trend}</span></div>
       <div class="nap-prediction-grid">
         <div class="nap-prediction-tile"><span>{score_label}</span><b>{row['implied_away_score']:.1f} – {row['implied_home_score']:.1f}</b></div>
         <div class="nap-prediction-tile"><span>{margin_label}</span><b>{row['predicted_home_margin']:+.1f}</b></div>

@@ -3,7 +3,7 @@
 import pandas as pd
 import streamlit as st
 
-from src.dashboard.components import empty_state, team_badge
+from src.dashboard.components import empty_state, probability_trend_badge, team_badge
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import format_hungarian_kickoff, select_current_week
 from src.dashboard.view_models import select_weekly_highlights
@@ -27,6 +27,14 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
     spread = _localized_number(row["predicted_home_margin"], language)
     total = _localized_number(row["predicted_total_points"], language)
     spread = f"+{spread}" if float(row["predicted_home_margin"]) >= 0 else spread
+    away_trend = probability_trend_badge(
+        row.get("away_probability_trend"), row.get("away_probability_change_pp"), language,
+        compact=True,
+    )
+    home_trend = probability_trend_badge(
+        row.get("home_probability_trend"), row.get("home_probability_change_pp"), language,
+        compact=True,
+    )
     return f"""
     <div class="nap-card nap-matchup-card">
       <div class="nap-matchup-meta">{week_label} · {kickoff}</div>
@@ -35,6 +43,7 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
         <div class="nap-at">@</div>
         <div>{team_badge(home, 38)} <b>{home}</b><span>{row['home_win_probability']:.1%}</span></div>
       </div>
+      <div class="nap-matchup-trends"><span>{away_trend}</span><span>{home_trend}</span></div>
       <div class="nap-scoreline">{score_label} <b>{away_score} – {home_score}</b>
       <span>Spread {spread} · Total {total}</span></div>
     </div>

@@ -2,6 +2,8 @@
 
 from html import escape
 
+import pandas as pd
+
 import streamlit as st
 
 from src.dashboard.team_branding import get_team_brand
@@ -117,6 +119,55 @@ def probability_bar(
         f'{escape(home_team)} {home_width:.1f} percent">'
         f'<span class="away" style="width:{away_width:.3f}%"></span>'
         f'<span class="home" style="width:{home_width:.3f}%"></span></div>'
+    )
+
+
+def probability_trend_badge(
+    direction: object,
+    change_pp: object,
+    language: str,
+    *,
+    compact: bool = False,
+) -> str:
+    """Render an already classified probability trend with clear semantics."""
+
+    normalized = str(direction).upper() if not pd.isna(direction) else "NEW"
+    labels = {
+        "HU": {
+            "NEW": "Új előrejelzés",
+            "UNCHANGED": "Lényegében változatlan",
+            "INCREASE": "Nőtt",
+            "DECREASE": "Csökkent",
+        },
+        "EN": {
+            "NEW": "New prediction",
+            "UNCHANGED": "Essentially unchanged",
+            "INCREASE": "Increased",
+            "DECREASE": "Decreased",
+        },
+    }
+    symbols = {"NEW": "•", "UNCHANGED": "→", "INCREASE": "↑", "DECREASE": "↓"}
+    tones = {"NEW": "new", "UNCHANGED": "neutral", "INCREASE": "increase", "DECREASE": "decrease"}
+    tooltip = (
+        "A győzelmi esély változása az előző sikeresen validált és publikált frissítéshez képest. "
+        "Az irány nem fogadási ajánlás."
+        if language == "HU" else
+        "Change in win probability versus the previous successfully validated and published refresh. "
+        "Direction is not a betting recommendation."
+    )
+    value = ""
+    if normalized != "NEW" and not pd.isna(change_pp):
+        value = f" {float(change_pp):+.1f} pp"
+        if language == "HU":
+            value = value.replace(".", ",").replace("-", "−")
+    label = labels.get(language, labels["EN"]).get(normalized, labels["EN"]["NEW"])
+    if compact and normalized != "NEW":
+        visible = f"{symbols.get(normalized, '•')} {value.strip()}"
+    else:
+        visible = f"{symbols.get(normalized, '•')} {label}{value}"
+    return (
+        f'<span class="nap-probability-trend {tones.get(normalized, "new")}">'
+        f'{escape(visible)}{tooltip_icon(tooltip, accessible_label=tooltip, align="right")}</span>'
     )
 
 

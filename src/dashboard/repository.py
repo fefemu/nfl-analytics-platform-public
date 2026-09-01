@@ -147,10 +147,28 @@ class DashboardRepository:
         }
         if not required.issubset(self.health().available_tables):
             return pd.DataFrame()
+        has_trends = (
+            "current_game_probability_trends"
+            in self.health().available_tables
+        )
+        trend_fields = """
+                    , trends.home_previous_win_probability
+                    , trends.away_previous_win_probability
+                    , trends.home_probability_change_pp
+                    , trends.away_probability_change_pp
+                    , trends.home_probability_trend
+                    , trends.away_probability_trend
+                    , trends.previous_prediction_generated_at
+                    , trends.neutral_threshold_pp
+        """ if has_trends else ""
+        trend_join = """
+                LEFT JOIN analytics.current_game_probability_trends AS trends
+                    USING (game_id)
+        """ if has_trends else ""
         connection = self._connect()
         try:
             return connection.execute(
-                """
+                f"""
                 SELECT
                     probability.game_id,
                     probability.season,
@@ -170,6 +188,7 @@ class DashboardRepository:
                     totals.prediction_mode AS totals_prediction_mode,
                     score.implied_away_score,
                     score.implied_home_score
+                    {trend_fields}
                 FROM analytics.current_game_predictions AS probability
                 INNER JOIN analytics.current_game_spread_predictions AS spread
                     USING (game_id)
@@ -177,6 +196,7 @@ class DashboardRepository:
                     USING (game_id)
                 INNER JOIN analytics.current_game_score_predictions AS score
                     USING (game_id)
+                {trend_join}
                 ORDER BY probability.week, probability.gameday,
                          probability.gametime, probability.game_id
                 """

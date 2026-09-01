@@ -57,6 +57,13 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-matchup-line { display:grid; grid-template-columns:1fr auto 1fr; gap:.65rem; align-items:center; margin:1rem 0; }
 .nap-matchup-line > div:not(.nap-at) { display:grid; grid-template-columns:auto 1fr; gap:.25rem .65rem; align-items:center; }
 .nap-matchup-line span { color:var(--blue); font-size:1.15rem; font-weight:800; grid-column:2; }
+.nap-matchup-trends,.nap-game-trends { display:flex; justify-content:space-between; gap:.65rem; margin:.3rem 0 .75rem; }
+.nap-matchup-trends > span:last-child,.nap-game-trends > span:last-child { text-align:right; }
+.nap-probability-trend { display:inline-flex; align-items:center; gap:.12rem; font-size:.72rem; font-weight:750; }
+.nap-probability-trend.increase { color:var(--green); }
+.nap-probability-trend.decrease { color:var(--red); }
+.nap-probability-trend.neutral,.nap-probability-trend.new { color:var(--muted); }
+.nap-probability-trend .nap-tooltip-trigger { color:inherit; }
 .nap-at { color:var(--muted); font-weight:800; }
 .nap-scoreline { display:flex; justify-content:space-between; gap:.7rem; color:var(--muted); border-top:1px solid var(--border); padding-top:.75rem; font-size:.8rem; }
 .nap-scoreline b { color:var(--text); }

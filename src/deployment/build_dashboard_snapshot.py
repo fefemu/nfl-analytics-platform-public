@@ -32,6 +32,7 @@ class SnapshotTable:
 # here prevents a deployment artifact from silently growing with the dev DB.
 DASHBOARD_TABLES = (
     SnapshotTable("analytics", "current_game_predictions"),
+    SnapshotTable("analytics", "current_game_probability_trends"),
     SnapshotTable("analytics", "current_game_spread_predictions"),
     SnapshotTable("analytics", "current_game_total_predictions"),
     SnapshotTable("analytics", "current_game_score_predictions"),
