@@ -128,6 +128,8 @@ def probability_trend_badge(
     language: str,
     *,
     compact: bool = False,
+    previous_probability: object = None,
+    current_probability: object = None,
 ) -> str:
     """Render an already classified probability trend with clear semantics."""
 
@@ -136,7 +138,7 @@ def probability_trend_badge(
         "HU": {
             "NEW": "Új előrejelzés",
             "UNCHANGED": "Lényegében változatlan",
-            "INCREASE": "Nőtt",
+            "INCREASE": "Növekedett",
             "DECREASE": "Csökkent",
         },
         "EN": {
@@ -149,22 +151,48 @@ def probability_trend_badge(
     symbols = {"NEW": "•", "UNCHANGED": "→", "INCREASE": "↑", "DECREASE": "↓"}
     tones = {"NEW": "new", "UNCHANGED": "neutral", "INCREASE": "increase", "DECREASE": "decrease"}
     tooltip = (
-        "A győzelmi esély változása az előző sikeresen validált és publikált frissítéshez képest. "
-        "Az irány nem fogadási ajánlás."
+        "Modellváltozás — A modell győzelmi valószínűségének változása az előző "
+        "sikeres, publikált modellfrissítéshez képest. A megjelenített % érték a "
+        "valószínűség abszolút változását mutatja, nem relatív százalékos változást. "
+        "A nyíl a modellbecslés változásának irányát jelzi, nem a fogadási értéket."
         if language == "HU" else
-        "Change in win probability versus the previous successfully validated and published refresh. "
-        "Direction is not a betting recommendation."
+        "Model probability change — Change in model win probability compared with the previous "
+        "successfully published model refresh. The displayed % value represents the absolute "
+        "change in probability, not relative percentage growth. The arrow indicates the direction "
+        "of the model estimate, not betting value."
     )
+    numeric_change = None if pd.isna(change_pp) else float(change_pp)
+    if normalized == "UNCHANGED" and numeric_change is not None:
+        numeric_change = 0.0
     value = ""
-    if normalized != "NEW" and not pd.isna(change_pp):
-        value = f" {float(change_pp):+.1f} pp"
+    if normalized != "NEW" and numeric_change is not None:
+        value = f"{numeric_change:+.1f}%" if normalized != "UNCHANGED" else "0.0%"
         if language == "HU":
-            value = value.replace(".", ",").replace("-", "−")
+            value = value.replace(".", ",")
+    if (
+        normalized != "NEW"
+        and not pd.isna(previous_probability)
+        and not pd.isna(current_probability)
+        and numeric_change is not None
+    ):
+        previous = f"{float(previous_probability):.1%}"
+        current = f"{float(current_probability):.1%}"
+        change = value
+        if language == "HU":
+            previous = previous.replace(".", ",")
+            current = current.replace(".", ",")
+            tooltip += f" Előző: {previous} · Aktuális: {current} · Változás: {change}."
+        else:
+            tooltip += f" Previous: {previous} · Current: {current} · Change: {change}."
     label = labels.get(language, labels["EN"]).get(normalized, labels["EN"]["NEW"])
     if compact and normalized != "NEW":
-        visible = f"{symbols.get(normalized, '•')} {value.strip()}"
+        visible = f"{symbols.get(normalized, '•')} {value}"
+    elif normalized == "NEW":
+        visible = label
+    elif normalized == "UNCHANGED":
+        visible = f"{symbols[normalized]} {label} · {value}"
     else:
-        visible = f"{symbols.get(normalized, '•')} {label}{value}"
+        visible = f"{symbols.get(normalized, '•')} {label} {value}"
     return (
         f'<span class="nap-probability-trend {tones.get(normalized, "new")}">'
         f'{escape(visible)}{tooltip_icon(tooltip, accessible_label=tooltip, align="right")}</span>'

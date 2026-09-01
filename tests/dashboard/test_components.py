@@ -32,15 +32,31 @@ def test_probability_bar_contains_accessible_team_probabilities() -> None:
 
 
 def test_probability_trend_badge_localizes_direction_and_disclaimer() -> None:
-    increase = probability_trend_badge("INCREASE", 1.24, "HU")
+    increase = probability_trend_badge(
+        "INCREASE", 1.24, "HU",
+        previous_probability=0.603,
+        current_probability=0.6154,
+    )
     new = probability_trend_badge("NEW", None, "EN")
     compact_new = probability_trend_badge("NEW", None, "HU", compact=True)
 
-    assert "↑ Nőtt +1,2 pp" in increase
-    assert "nem fogadási ajánlás" in increase
+    assert "↑ Növekedett +1,2%" in increase
+    assert "nem relatív százalékos változást" in increase
+    assert "Előző: 60,3% · Aktuális: 61,5% · Változás: +1,2%" in increase
     assert "New prediction" in new
     assert "Új előrejelzés" in compact_new
     assert "0.0" not in new
+
+
+def test_probability_trend_never_renders_signed_zero() -> None:
+    positive_zero = probability_trend_badge("UNCHANGED", 0.04, "EN", compact=True)
+    negative_zero = probability_trend_badge("UNCHANGED", -0.04, "EN")
+
+    assert "→ 0.0%" in positive_zero
+    assert "Essentially unchanged · 0.0%" in negative_zero
+    assert "+0.0%" not in positive_zero + negative_zero
+    assert "-0.0%" not in positive_zero + negative_zero
+    assert "pp" not in positive_zero + negative_zero
 
 
 def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None:

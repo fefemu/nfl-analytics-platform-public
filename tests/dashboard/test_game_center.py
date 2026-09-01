@@ -18,8 +18,10 @@ def test_game_center_hero_contains_predictions_and_team_logos() -> None:
         "predicted_total_points": 51.5,
         "away_probability_trend": "UNCHANGED",
         "away_probability_change_pp": -0.2,
+        "away_previous_win_probability": 0.445,
         "home_probability_trend": "UNCHANGED",
         "home_probability_change_pp": 0.2,
+        "home_previous_win_probability": 0.555,
     })
 
     markup = _hero(row, "HU")
@@ -30,6 +32,9 @@ def test_game_center_hero_contains_predictions_and_team_logos() -> None:
     assert "1. HÉT" in markup
     assert markup.count("nap-team-logo") == 2
     assert markup.count("Lényegében változatlan") == 2
+    assert markup.count("0,0%") >= 2
+    assert "+0,0%" not in markup
+    assert "-0,0%" not in markup
 
 
 def test_preferred_market_label_formats_spread_and_total() -> None:
