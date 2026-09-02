@@ -41,6 +41,15 @@ def test_team_logo_css_uses_neutral_surface_and_safe_inset() -> None:
     assert "overflow:hidden" in APP_CSS
 
 
+def test_roster_header_does_not_reveal_hidden_logo_fallback() -> None:
+    assert ".nap-roster-hero span" not in APP_CSS
+    assert ".nap-roster-identity span,.nap-roster-identity small" in APP_CSS
+
+
+def test_depth_chart_group_anchor_icons_are_hidden() -> None:
+    assert ".nap-depth-group h4 a { display:none !important; }" in APP_CSS
+
+
 def test_probability_bar_contains_accessible_team_probabilities() -> None:
     markup = probability_bar("BUF", 0.443, "KC", 0.557)
 

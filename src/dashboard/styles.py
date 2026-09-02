@@ -122,7 +122,7 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-roster-hero { display:flex; align-items:center; gap:1rem; margin-bottom:1rem; padding:.8rem 1rem; min-height:92px; }
 .nap-roster-identity { flex:1; min-width:0; }
 .nap-roster-hero h2 { margin:0 0 .1rem; font-size:1.35rem; }
-.nap-roster-hero span,.nap-roster-hero small { display:block; color:var(--muted); font-size:.75rem; }
+.nap-roster-identity span,.nap-roster-identity small { display:block; color:var(--muted); font-size:.75rem; }
 .nap-roster-kpi { border-left:1px solid var(--border); padding:.2rem .5rem .2rem 1rem; min-width:120px; }
 .nap-roster-kpi span,.nap-roster-kpi small { color:var(--muted); font-size:.68rem; }
 .nap-roster-kpi strong { display:block; color:var(--green); font-size:1.35rem; }
@@ -157,6 +157,7 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-depth-groups { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; }
 .nap-depth-group { padding:.75rem; border:1px solid var(--border); border-radius:9px; background:rgba(11,27,46,.78); }
 .nap-depth-group h4 { color:var(--green); margin:0 0 .5rem; }
+.nap-depth-group h4 a { display:none !important; }
 .nap-depth-player { display:grid; grid-template-columns:22px 1fr auto; gap:.4rem; align-items:center; padding:.4rem 0; border-top:1px solid rgba(255,255,255,.06); }
 .nap-depth-player > span { color:var(--muted); font-size:.68rem; text-align:center; }
 .nap-depth-player strong { color:var(--text); font-size:.76rem; }
