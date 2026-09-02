@@ -131,6 +131,13 @@ def test_tooltip_icon_is_touch_and_keyboard_accessible() -> None:
     assert "Model probability &lt; market probability" in markup
 
 
+def test_tooltip_typography_does_not_inherit_condensed_parent_styles() -> None:
+    assert 'font:500 .74rem/1.55 "Segoe UI",Arial,sans-serif' in APP_CSS
+    assert "letter-spacing:normal !important" in APP_CSS
+    assert "word-spacing:normal !important" in APP_CSS
+    assert "text-transform:none" in APP_CSS
+
+
 def test_candidate_grid_styles_do_not_leak_into_nested_tooltips() -> None:
     assert ".nap-candidate-grid > span {" in APP_CSS
     assert ".nap-candidate-grid > span > b {" in APP_CSS

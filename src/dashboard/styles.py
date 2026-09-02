@@ -130,7 +130,7 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-tooltip { position:relative; display:inline-flex; align-items:center; vertical-align:middle; }
 .nap-tooltip-trigger { display:inline-flex; align-items:center; justify-content:center; width:1.55rem; min-width:1.55rem; height:1.55rem; margin:-.25rem 0; padding:0; border:0; border-radius:50%; color:var(--muted); background:transparent; font:inherit; font-size:.76rem; font-weight:800; line-height:1; cursor:help; }
 .nap-tooltip-trigger:hover,.nap-tooltip-trigger:focus-visible { color:var(--blue); background:rgba(66,165,255,.12); outline:2px solid rgba(66,165,255,.55); outline-offset:1px; }
-.nap-tooltip-content { position:absolute; z-index:10020; left:0; bottom:calc(100% + .5rem); display:block; width:max-content; min-width:min(220px,calc(100vw - 2rem)); max-width:min(350px,calc(100vw - 2rem)); padding:.72rem .8rem; border:1px solid var(--border); border-radius:8px; color:var(--text); background:#10243a; box-shadow:0 12px 32px rgba(0,0,0,.42); font-size:.74rem; font-weight:500; line-height:1.55; text-align:left; white-space:normal; overflow-wrap:break-word; word-break:normal; hyphens:auto; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .12s ease,transform .12s ease,visibility .12s ease; }
+.nap-tooltip-content { position:absolute; z-index:10020; left:0; bottom:calc(100% + .5rem); display:block; width:max-content; min-width:min(220px,calc(100vw - 2rem)); max-width:min(350px,calc(100vw - 2rem)); padding:.72rem .8rem; border:1px solid var(--border); border-radius:8px; color:var(--text); background:#10243a; box-shadow:0 12px 32px rgba(0,0,0,.42); font:500 .74rem/1.55 "Segoe UI",Arial,sans-serif; font-stretch:normal; letter-spacing:normal !important; word-spacing:normal !important; text-align:left; text-transform:none; white-space:normal; overflow-wrap:break-word; word-break:normal; hyphens:auto; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(4px); transition:opacity .12s ease,transform .12s ease,visibility .12s ease; }
 .nap-tooltip-right .nap-tooltip-content { right:0; left:auto; }
 .nap-tooltip:hover .nap-tooltip-content,.nap-tooltip:focus-within .nap-tooltip-content { opacity:1; visibility:visible; transform:translateY(0); }
 .nap-heading-with-help,.nap-card:has(.nap-tooltip) { position:relative; overflow:visible; }
@@ -224,7 +224,7 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
   .nap-schedule-elo { display:none; }
   .nap-schedule-current { border-left:3px solid var(--green); }
   .nap-tooltip-trigger { width:2.25rem; min-width:2.25rem; height:2.25rem; margin:-.6rem -.25rem; cursor:pointer; }
-  .nap-tooltip-content { width:min(320px,calc(100vw - 2.5rem)); min-width:0; max-width:calc(100vw - 2.5rem); padding:.78rem .85rem; font-size:.8rem; line-height:1.55; }
+  .nap-tooltip-content { width:min(320px,calc(100vw - 2.5rem)); min-width:0; max-width:calc(100vw - 2.5rem); padding:.78rem .85rem; font-size:.8rem; line-height:1.6; }
 }
 </style>
 """
