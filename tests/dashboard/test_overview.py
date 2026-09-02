@@ -1,6 +1,8 @@
+import inspect
+
 import pandas as pd
 
-from src.dashboard.pages.overview import _matchup_card
+from src.dashboard.pages.overview import _matchup_card, render_weekly_overview
 
 
 def test_hungarian_matchup_card_is_localized_and_links_to_game_center() -> None:
@@ -37,3 +39,12 @@ def test_hungarian_matchup_card_is_localized_and_links_to_game_center() -> None:
     assert "Növekedett" not in markup
     assert markup.count("nap-tooltip-left") == 1
     assert markup.count("nap-tooltip-right") == 1
+
+
+def test_weekly_summary_does_not_use_directional_metric_deltas() -> None:
+    source = inspect.getsource(render_weekly_overview)
+
+    assert "delta_color" not in source
+    assert "summary[1].caption" in source
+    assert "summary[2].caption" in source
+    assert "summary[3].caption" in source

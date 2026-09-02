@@ -95,8 +95,6 @@ def render_weekly_overview(
     summary[1].metric(
         tr(language, "most_even"),
         f"{featured['away_team']} @ {featured['home_team']}",
-        f"{away_probability:.1%} / {home_probability:.1%}",
-        delta_color="off",
         help=(
             "The game whose model win probabilities are closest to 50/50 "
             "within the selected week."
@@ -104,6 +102,7 @@ def render_weekly_overview(
             "Az a heti mérkőzés, amelynél a modell győzelmi valószínűségei a legközelebb vannak az 50–50%-hoz."
         ),
     )
+    summary[1].caption(f"{away_probability:.1%} / {home_probability:.1%}")
     favorite_is_home = (
         float(favorite["home_win_probability"])
         >= float(favorite["away_win_probability"])
@@ -116,20 +115,23 @@ def render_weekly_overview(
     summary[2].metric(
         "Biggest favorite" if language == "EN" else "Legnagyobb favorit",
         str(favorite_team),
-        f"{float(favorite_probability):.1%} · {favorite['away_team']} @ {favorite['home_team']}",
-        delta_color="off",
         help=(
             "The team with the highest model win probability in the selected week."
             if language == "EN" else
             "A kiválasztott hét legmagasabb modell szerinti győzelmi valószínűségével rendelkező csapata."
         ),
     )
+    summary[2].caption(
+        f"{float(favorite_probability):.1%} · "
+        f"{favorite['away_team']} @ {favorite['home_team']}"
+    )
     summary[3].metric(
         tr(language, "highest_total"),
         f"{highest_total['away_team']} @ {highest_total['home_team']}",
+    )
+    summary[3].caption(
         f"{_localized_number(highest_total['predicted_total_points'], language)} "
-        + ("points" if language == "EN" else "pont"),
-        delta_color="off",
+        + ("points" if language == "EN" else "pont")
     )
     st.markdown(f"### {tr(language, 'matchups')}")
     for start in range(0, len(week_games), 2):
