@@ -15,6 +15,16 @@ def test_known_team_badge_uses_remote_logo_with_fallback() -> None:
     assert "https://a.espncdn.com/" in markup
     assert "nap-team-fallback" in markup
     assert ">KC</span>" in markup
+    assert "--nap-team-accent:#E31837" in markup
+    assert "previousElementSibling.style.display='flex'" in markup
+
+
+def test_loaded_team_logo_does_not_show_fallback_text_behind_it() -> None:
+    markup = team_badge("NYG")
+
+    assert 'class="nap-team-fallback" aria-hidden="true"' in markup
+    assert "onerror=" in markup
+    assert "onload=" not in markup
 
 
 def test_unknown_team_badge_uses_local_badge_only() -> None:
@@ -22,6 +32,13 @@ def test_unknown_team_badge_uses_local_badge_only() -> None:
 
     assert "nap-team-logo" not in markup
     assert ">XYZ</span>" in markup
+
+
+def test_team_logo_css_uses_neutral_surface_and_safe_inset() -> None:
+    assert "background:linear-gradient(145deg,#f8fafc,#dce5ef)" in APP_CSS
+    assert ".nap-team-fallback { display:none;" in APP_CSS
+    assert ".nap-team-logo { position:absolute; inset:8%;" in APP_CSS
+    assert "overflow:hidden" in APP_CSS
 
 
 def test_probability_bar_contains_accessible_team_probabilities() -> None:

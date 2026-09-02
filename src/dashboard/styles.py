@@ -55,9 +55,9 @@ h1, h2, h3, p, label { color: var(--text); }
 .nap-matchup-link .nap-matchup-card { transition:border-color .16s ease, transform .16s ease, box-shadow .16s ease; }
 .nap-matchup-link:hover .nap-matchup-card { border-color:rgba(66,165,255,.62); transform:translateY(-2px); box-shadow:0 18px 44px rgba(0,0,0,.24); }
 .nap-matchup-action { color:var(--blue); font-size:.72rem; font-weight:750; margin-top:.65rem; text-align:right; }
-.nap-team-identity { position:relative; display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; overflow:visible; border-radius:50%; box-shadow:0 7px 18px rgba(0,0,0,.24); }
-.nap-team-fallback { color:#fff; font-weight:850; }
-.nap-team-logo { position:absolute; inset:0; display:block; object-fit:contain; filter:drop-shadow(0 7px 8px rgba(0,0,0,.38)); }
+.nap-team-identity { position:relative; display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; overflow:hidden; border:2px solid color-mix(in srgb,var(--nap-team-accent,#64748b) 72%,#dce5ef); border-radius:50%; background:linear-gradient(145deg,#f8fafc,#dce5ef); box-shadow:inset 0 0 0 1px rgba(255,255,255,.7),0 7px 18px rgba(0,0,0,.28); }
+.nap-team-fallback { display:none; position:absolute; inset:0; align-items:center; justify-content:center; color:#fff; background:#132238; font-weight:850; }
+.nap-team-logo { position:absolute; inset:8%; display:block; width:84%; height:84%; object-fit:contain; object-position:center; filter:drop-shadow(0 3px 3px rgba(0,0,0,.24)); }
 .nap-matchup-meta { color:var(--muted); font-size:.7rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }
 .nap-matchup-line { display:grid; grid-template-columns:1fr auto 1fr; gap:.65rem; align-items:center; margin:1rem 0; }
 .nap-matchup-line > div:not(.nap-at) { display:grid; grid-template-columns:auto 1fr; gap:.25rem .65rem; align-items:center; }

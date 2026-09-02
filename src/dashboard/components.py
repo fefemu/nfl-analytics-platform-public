@@ -95,21 +95,21 @@ def team_badge(team_code: str, size: int = 42) -> str:
     if brand.logo_url:
         return (
             f'<span class="nap-team-identity" title="{escape(brand.display_name)}" '
-            f'style="width:{size}px;height:{size}px;background:'
-            f'linear-gradient(145deg,{brand.primary_color},{brand.secondary_color})">'
-            f'<span class="nap-team-fallback" style="font-size:{max(11, size // 3)}px">'
+            f'style="width:{size}px;height:{size}px;--nap-team-accent:'
+            f'{brand.primary_color}">'
+            f'<span class="nap-team-fallback" aria-hidden="true" '
+            f'style="font-size:{max(11, size // 3)}px">'
             f'{escape(brand.code)}</span>'
             f'<img class="nap-team-logo" src="{escape(brand.logo_url)}" '
             f'alt="{escape(brand.display_name)} logo" loading="lazy" '
-            f'onerror="this.style.display=\'none\'" '
-            f'style="width:{size}px;height:{size}px" /></span>'
+            f'onerror="this.style.display=\'none\';'
+            f'this.previousElementSibling.style.display=\'flex\'" /></span>'
         )
     return (
         f'<span title="{escape(brand.display_name)}" style="display:inline-flex;'
         f'width:{size}px;height:{size}px;border-radius:50%;align-items:center;'
         f'justify-content:center;font-weight:850;font-size:{max(11, size // 3)}px;'
-        f'color:#fff;background:linear-gradient(145deg,{brand.primary_color},'
-        f'{brand.secondary_color});border:1px solid rgba(255,255,255,.2);'
+        f'color:#fff;background:#132238;border:2px solid {brand.primary_color};'
         f'box-shadow:0 8px 20px rgba(0,0,0,.25)">{escape(brand.code)}</span>'
     )
 
