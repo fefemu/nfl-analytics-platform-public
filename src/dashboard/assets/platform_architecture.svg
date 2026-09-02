@@ -14,7 +14,7 @@
     <text x="82" y="270" class="x">nflverse</text><text x="82" y="305" class="x">nfelo / nfelounits</text><text x="82" y="340" class="x">The Odds API</text>
     <text x="82" y="405" class="n">Külső futball- és piaci adatok</text>
     <rect x="365" y="185" width="245" height="270" rx="18" class="b"/><text x="392" y="225" class="h">Adatfeldolgozás</text>
-    <text x="392" y="285" class="x">Python</text><text x="392" y="325" class="x">pandas</text><text x="392" y="405" class="n">Begyűjtés · tisztítás · feature engineering</text>
+    <text x="392" y="285" class="x">Python</text><text x="392" y="325" class="x">pandas</text><text x="392" y="390" class="n">Begyűjtés · tisztítás</text><text x="392" y="412" class="n">Feature engineering</text>
     <rect x="675" y="185" width="245" height="270" rx="18" class="b"/><text x="702" y="225" class="h">Adattárolás</text>
     <text x="702" y="285" class="x">DuckDB</text><text x="702" y="325" class="x">SQL</text><text x="702" y="390" class="n">Lokális analitikai adattár</text><text x="702" y="412" class="n">és lekérdezések</text>
     <rect x="985" y="185" width="245" height="270" rx="18" class="b"/><text x="1012" y="225" class="h">Modellezés és szimuláció</text>

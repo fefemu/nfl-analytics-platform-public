@@ -1,4 +1,5 @@
 from src.dashboard.components import (
+    metric_tile,
     probability_bar,
     probability_trend_badge,
     team_badge,
@@ -77,12 +78,26 @@ def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None
     assert '[data-testid="collapsedControl"]' in mobile_css
     assert '[data-testid="stSidebarCollapsedControl"]' in mobile_css
     assert '[data-testid="stSidebarCollapseButton"]' in mobile_css
-    assert '[data-testid="stToolbar"]' in mobile_css
+    assert '[data-testid="stToolbar"] {' not in mobile_css
     assert "display:flex !important" in mobile_css
     assert "position:fixed !important" in mobile_css
     assert "z-index:1000000 !important" in mobile_css
     assert "width:2.75rem !important" in mobile_css
     assert "height:2.75rem !important" in mobile_css
+
+
+def test_metric_tile_uses_shared_info_tooltip(monkeypatch) -> None:
+    rendered: list[str] = []
+    monkeypatch.setattr(
+        "src.dashboard.components.st.markdown",
+        lambda markup, **_: rendered.append(markup),
+    )
+
+    metric_tile("Simulations", "10,000", help_text="Complete simulated seasons.")
+
+    assert "nap-metric-label" in rendered[0]
+    assert "ⓘ" in rendered[0]
+    assert "Complete simulated seasons." in rendered[0]
 
 
 def test_tooltip_icon_is_touch_and_keyboard_accessible() -> None:

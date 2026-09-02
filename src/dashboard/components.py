@@ -41,11 +41,25 @@ def render_page_header(
     )
 
 
-def metric_tile(label: str, value: str, tone: str = "") -> None:
+def metric_tile(
+    label: str,
+    value: str,
+    tone: str = "",
+    *,
+    help_text: str | None = None,
+) -> None:
     safe_tone = tone if tone in {"green", "blue", "amber"} else ""
+    help_markup = (
+        tooltip_icon(
+            help_text,
+            accessible_label=f"Explain {label}",
+            align="right",
+        )
+        if help_text else ""
+    )
     st.markdown(
         '<div class="nap-card">'
-        f'<div class="nap-metric-label">{escape(label)}</div>'
+        f'<div class="nap-metric-label">{escape(label)}{help_markup}</div>'
         f'<div class="nap-metric-value {safe_tone}">{escape(value)}</div>'
         '</div>',
         unsafe_allow_html=True,

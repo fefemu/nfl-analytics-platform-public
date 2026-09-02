@@ -60,6 +60,8 @@ def test_architecture_stays_at_technology_level() -> None:
     assert "current_game_predictions" not in content
     assert "pytest · Git · GitHub Actions" in content
     assert "automatizált minőségbiztosítás" in content
+    assert "Begyűjtés · tisztítás</text><text" in content
+    assert "Begyűjtés · tisztítás · feature engineering" not in content
 
 
 def test_data_model_contains_current_schema_table_counts() -> None:
