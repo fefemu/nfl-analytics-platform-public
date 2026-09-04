@@ -104,14 +104,15 @@ def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None
     assert '[data-testid="collapsedControl"]' in mobile_css
     assert '[data-testid="stSidebarCollapsedControl"]' in mobile_css
     assert '[data-testid="stSidebarCollapseButton"]' in mobile_css
-    assert '[data-testid="stHeader"] button[kind="headerNoPadding"]' in mobile_css
+    assert '[data-testid="stSidebar"][aria-expanded="true"]' in mobile_css
+    assert '[data-testid="stHeader"] button[kind="headerNoPadding"]' not in mobile_css
     assert '[data-testid="stToolbar"] {' not in mobile_css
     assert "display:flex !important" in mobile_css
     assert "position:fixed !important" in mobile_css
     assert "z-index:1000000 !important" in mobile_css
     assert "pointer-events:auto !important" in mobile_css
-    assert "width:2.75rem !important" in mobile_css
-    assert "height:2.75rem !important" in mobile_css
+    assert "min-width:2.75rem !important" in mobile_css
+    assert "min-height:2.75rem !important" in mobile_css
 
 
 def test_metric_tile_uses_shared_info_tooltip(monkeypatch) -> None:
