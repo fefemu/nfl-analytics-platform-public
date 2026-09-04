@@ -185,7 +185,8 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
     display:block !important; visibility:visible !important;
     min-height:3.5rem !important; pointer-events:auto !important;
   }
-  [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"] {
+  [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"],
+  [data-testid="stExpandSidebarButton"] {
     display:flex !important; visibility:visible !important; opacity:1 !important;
     pointer-events:auto !important;
     position:fixed !important; top:.55rem !important; left:.55rem !important;
@@ -199,6 +200,7 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
     pointer-events:auto !important; z-index:1000000 !important;
   }
   [data-testid="collapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button,
+  [data-testid="stExpandSidebarButton"] button,
   [data-testid="stSidebarCollapseButton"] button {
     display:flex !important; visibility:visible !important; opacity:1 !important;
     pointer-events:auto !important;

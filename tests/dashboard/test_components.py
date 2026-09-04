@@ -103,6 +103,7 @@ def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None
 
     assert '[data-testid="collapsedControl"]' in mobile_css
     assert '[data-testid="stSidebarCollapsedControl"]' in mobile_css
+    assert '[data-testid="stExpandSidebarButton"]' in mobile_css
     assert '[data-testid="stSidebarCollapseButton"]' in mobile_css
     assert '[data-testid="stSidebar"][aria-expanded="true"]' in mobile_css
     assert '[data-testid="stHeader"] button[kind="headerNoPadding"]' not in mobile_css
