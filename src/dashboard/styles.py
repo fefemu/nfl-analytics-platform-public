@@ -10,10 +10,11 @@ APP_CSS = """
 }
 .stApp { background: radial-gradient(circle at 70% -10%, #102944 0, var(--canvas) 42%); }
 [data-testid="stHeader"] { background: transparent; }
-[data-testid="stToolbar"], [data-testid="stAppDeployButton"], #MainMenu { display:none !important; }
+[data-testid="stAppDeployButton"], [data-testid="stMainMenu"], #MainMenu { display:none !important; }
 [data-testid="stSidebar"] { background: linear-gradient(180deg, #071525 0%, #06111f 100%); border-right: 1px solid var(--border); }
 [data-testid="stSidebar"] > div { padding-top: 1.2rem; }
 @media (min-width: 761px) {
+  [data-testid="stToolbar"] { display:none !important; }
   [data-testid="stSidebar"] {
     display:block !important; visibility:visible !important;
     position:relative !important; left:0 !important;
@@ -185,7 +186,10 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
     display:block !important; visibility:visible !important;
     min-height:3.5rem !important; pointer-events:auto !important;
   }
-  [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"],
+  [data-testid="stToolbar"] {
+    display:flex !important; visibility:visible !important;
+    pointer-events:auto !important;
+  }
   [data-testid="stExpandSidebarButton"] {
     display:flex !important; visibility:visible !important; opacity:1 !important;
     pointer-events:auto !important;
@@ -199,8 +203,6 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
     display:flex !important; visibility:visible !important; opacity:1 !important;
     pointer-events:auto !important; z-index:1000000 !important;
   }
-  [data-testid="collapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button,
-  [data-testid="stExpandSidebarButton"] button,
   [data-testid="stSidebarCollapseButton"] button {
     display:flex !important; visibility:visible !important; opacity:1 !important;
     pointer-events:auto !important;

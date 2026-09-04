@@ -100,19 +100,26 @@ def test_probability_trend_supports_inward_tooltip_alignment() -> None:
 
 def test_mobile_sidebar_reopen_control_remains_visible_and_touch_sized() -> None:
     mobile_css = APP_CSS.split("@media (max-width: 760px)", maxsplit=1)[1]
+    desktop_css = APP_CSS.split("@media (min-width: 761px)", maxsplit=1)[1].split(
+        "@media (max-width: 760px)", maxsplit=1
+    )[0]
     base_sidebar_rule = APP_CSS.split(
         '[data-testid="stSidebar"]', maxsplit=1
     )[1].split("}", maxsplit=1)[0]
 
     assert "min-width" not in base_sidebar_rule
     assert "max-width" not in base_sidebar_rule
-    assert '[data-testid="collapsedControl"]' in mobile_css
-    assert '[data-testid="stSidebarCollapsedControl"]' in mobile_css
     assert '[data-testid="stExpandSidebarButton"]' in mobile_css
     assert '[data-testid="stSidebarCollapseButton"]' in mobile_css
     assert '[data-testid="stSidebar"][aria-expanded="true"]' in mobile_css
-    assert '[data-testid="stHeader"] button[kind="headerNoPadding"]' not in mobile_css
-    assert '[data-testid="stToolbar"] {' not in mobile_css
+    assert '[data-testid="collapsedControl"]' not in mobile_css
+    assert '[data-testid="stSidebarCollapsedControl"]' not in mobile_css
+    assert '[data-testid="stToolbar"] {' in mobile_css
+    assert '[data-testid="stToolbar"] { display:none !important; }' in desktop_css
+    assert (
+        '[data-testid="stToolbar"], [data-testid="stAppDeployButton"]'
+        not in APP_CSS
+    )
     assert "display:flex !important" in mobile_css
     assert "position:fixed !important" in mobile_css
     assert "z-index:1000000 !important" in mobile_css
