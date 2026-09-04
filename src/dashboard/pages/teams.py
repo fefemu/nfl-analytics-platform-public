@@ -52,6 +52,16 @@ POSITION_GROUPS = {
     "LCB": "CB", "RCB": "CB", "NB": "CB", "FS": "S", "SS": "S",
 }
 
+SPECIAL_TEAMS_ROLES = {
+    "PK": ("K", "Kicker", "Rúgó"),
+    "P": ("P", "Punter", "Punter"),
+    "LS": ("LS", "Long Snapper", "Long snapper"),
+    "KR": ("KR", "Kick Returner", "Kick returner"),
+    "PR": ("PR", "Punt Returner", "Punt returner"),
+    "H": ("H", "Holder", "Holder"),
+}
+SPECIAL_TEAMS_ROLE_ORDER = {role: index for index, role in enumerate(SPECIAL_TEAMS_ROLES)}
+
 
 def prepare_current_rosters(rosters: pd.DataFrame) -> pd.DataFrame:
     """Normalize identity and depth-chart fields used by the public page."""
@@ -89,6 +99,39 @@ def select_starting_lineup(data: pd.DataFrame, unit: str) -> pd.DataFrame:
         .reset_index(drop=True)
     )
     return lineup
+
+
+def prepare_special_teams(data: pd.DataFrame) -> pd.DataFrame:
+    """Return source-backed special-teams roles in stable depth order."""
+
+    if data.empty:
+        return data.copy()
+    special = data.loc[
+        data["pos_grp"].eq("Special Teams")
+        & data["pos_abb"].isin(SPECIAL_TEAMS_ROLES)
+    ].copy()
+    if special.empty:
+        return special
+    special["role_order"] = special["pos_abb"].map(SPECIAL_TEAMS_ROLE_ORDER)
+    special["public_role"] = special["pos_abb"].map(
+        lambda role: SPECIAL_TEAMS_ROLES[str(role)][0]
+    )
+    special["depth_label"] = special.apply(
+        lambda row: f'{row["public_role"]}{int(row["pos_rank"])}', axis=1
+    )
+    return special.sort_values(
+        ["role_order", "pos_rank", "pos_slot", "player_name"], kind="stable"
+    ).reset_index(drop=True)
+
+
+def team_unit_tab_labels(language: Language) -> tuple[str, str, str]:
+    """Return localized team-unit tab labels."""
+
+    return (
+        ("Offense", "Defense", "Special Teams")
+        if language == "EN" else
+        ("Támadók", "Védelem", "Speciális egység")
+    )
 
 
 def _injury_badge(row: pd.Series) -> str:
@@ -158,6 +201,51 @@ def _depth_player(row: pd.Series) -> str:
         '<div class="nap-depth-player">'
         f'<span>{int(row["pos_rank"])}</span><strong>{escape(str(row["player_name"]))}</strong>'
         f'<small>{number}{escape(str(row["pos_abb"]))}</small>{_injury_badge(row)}</div>'
+    )
+
+
+def _special_teams_player(row: pd.Series) -> str:
+    number = "" if pd.isna(row.get("jersey_number")) else f"#{escape(str(row['jersey_number']))}"
+    headshot = row.get("headshot")
+    image = (
+        f'<img src="{escape(str(headshot))}" alt="" loading="lazy">'
+        if pd.notna(headshot) and str(headshot).startswith("http") else ""
+    )
+    return (
+        '<div class="nap-special-player">' + image
+        + '<div class="nap-player-copy">'
+        + f'<span class="nap-player-position">{escape(str(row["depth_label"]))}</span>'
+        + f'<strong>{escape(str(row["player_name"]))}</strong>'
+        + f'<small>{number}</small>{_injury_badge(row)}</div></div>'
+    )
+
+
+def _render_special_teams(team_data: pd.DataFrame, language: Language) -> None:
+    data = prepare_special_teams(team_data)
+    if data.empty:
+        empty_state(
+            "Special teams depth chart unavailable"
+            if language == "EN" else "A speciális egység depth chartja nem érhető el",
+            "No source-backed special-teams roles are available for this team."
+            if language == "EN" else
+            "Ehhez a csapathoz nincs forrásból elérhető special teams szerepkör.",
+        )
+        return
+    blocks = []
+    for source_role, (public_role, en_name, hu_name) in SPECIAL_TEAMS_ROLES.items():
+        players = data.loc[data["pos_abb"].eq(source_role)]
+        if players.empty:
+            continue
+        role_name = en_name if language == "EN" else hu_name
+        blocks.append(
+            '<section class="nap-special-role"><h4>'
+            + f'{escape(public_role)} · {escape(role_name)}</h4>'
+            + "".join(_special_teams_player(row) for _, row in players.iterrows())
+            + "</section>"
+        )
+    st.markdown(
+        '<div class="nap-special-teams-grid">' + "".join(blocks) + "</div>",
+        unsafe_allow_html=True,
     )
 
 
@@ -390,13 +478,15 @@ def render_teams(
             ("STARTING", "HU"): "Kezdő felállás", ("FULL", "HU"): "Teljes depth chart",
         }[(value, language)],
     )
-    offense, defense = st.tabs(["Offense", "Defense"])
+    offense, defense, special_teams = st.tabs(team_unit_tab_labels(language))
     with offense:
         _render_unit_strength(team_data, "offense", language)
         _render_formation(team_data, "offense", language) if view == "STARTING" else _render_full_depth(team_data, "offense")
     with defense:
         _render_unit_strength(team_data, "defense", language)
         _render_formation(team_data, "defense", language) if view == "STARTING" else _render_full_depth(team_data, "defense")
+    with special_teams:
+        _render_special_teams(team_data, language)
     _render_team_schedule(
         pd.DataFrame() if schedules is None else schedules,
         selected,

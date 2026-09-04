@@ -23,7 +23,7 @@ COPY: dict[str, dict[Language, str]] = {
     "subtitle_overview": {"EN": "Matchups, expected scores and win probabilities for the selected week.", "HU": "A kiválasztott hét mérkőzései, várható eredményei és győzelmi valószínűségei."},
     "subtitle_games": {"EN": "A detailed model and market view of a selected matchup.", "HU": "Egy kiválasztott mérkőzés részletes modell- és piaci elemzése."},
     "subtitle_betting": {"EN": "Markets where model estimates differ most from current bookmaker pricing.", "HU": "Azok a piacok, ahol a modell becslése leginkább eltér a fogadóirodák aktuális árazásától."},
-    "subtitle_teams": {"EN": "Current NFL rosters and starting formations by offensive and defensive unit.", "HU": "Az NFL-csapatok aktuális kerete és kezdő felállása támadó- és védőegység szerinti bontásban."},
+    "subtitle_teams": {"EN": "Current NFL rosters and depth charts across offense, defense and special teams.", "HU": "Az NFL-csapatok aktuális kerete és depth chartja támadó-, védő- és speciális egység szerinti bontásban."},
     "subtitle_simulator": {"EN": "Probabilistic season outcomes from 10,000 Monte Carlo simulations.", "HU": "A teljes NFL-szezon 10 000 Monte Carlo-szimulációból becsült lehetséges kimenetelei."},
     "subtitle_lab": {"EN": "How are NFL forecasts built and tested?", "HU": "Hogyan készülnek és hogyan teszteljük az NFL-előrejelzéseket?"},
     "subtitle_about": {"EN": "What the platform does, how it is built and how its outputs should be used.", "HU": "Mit tud a platform, hogyan épül fel, és hogyan érdemes értelmezni az eredményeit."},

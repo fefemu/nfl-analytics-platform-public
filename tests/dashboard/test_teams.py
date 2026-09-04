@@ -4,9 +4,13 @@ import pandas as pd
 import pytest
 
 from src.dashboard.pages.teams import (
+    SPECIAL_TEAMS_ROLES,
     prepare_current_rosters,
+    prepare_special_teams,
     select_starting_lineup,
+    team_unit_tab_labels,
 )
+from src.dashboard.styles import APP_CSS
 from src.dashboard.view_models import prepare_team_schedule
 
 
@@ -69,6 +73,52 @@ def test_defense_lineup_excludes_twelfth_nickel_slot(group: str) -> None:
 def test_unknown_lineup_unit_is_rejected() -> None:
     with pytest.raises(ValueError, match="offense or defense"):
         select_starting_lineup(pd.DataFrame(), "special teams")
+
+
+def _special_teams_rows() -> pd.DataFrame:
+    return pd.DataFrame([
+        {"team": "DAL", "player_name": "Kicker", "pos_grp": "Special Teams", "pos_abb": "PK", "pos_slot": 1, "pos_rank": 1},
+        {"team": "DAL", "player_name": "Returner Two", "pos_grp": "Special Teams", "pos_abb": "KR", "pos_slot": 5, "pos_rank": 2},
+        {"team": "DAL", "player_name": "Returner One", "pos_grp": "Special Teams", "pos_abb": "KR", "pos_slot": 5, "pos_rank": 1},
+        {"team": "DAL", "player_name": "Long Snapper", "pos_grp": "Special Teams", "pos_abb": "LS", "pos_slot": 3, "pos_rank": 1},
+        {"team": "DAL", "player_name": "Unknown", "pos_grp": "Special Teams", "pos_abb": "GUN", "pos_slot": 7, "pos_rank": 1},
+        {"team": "DAL", "player_name": "Quarterback", "pos_grp": "3WR 1TE", "pos_abb": "QB", "pos_slot": 9, "pos_rank": 1},
+    ])
+
+
+def test_special_teams_maps_only_available_supported_roles() -> None:
+    result = prepare_special_teams(_special_teams_rows())
+
+    assert set(result["pos_abb"]) == {"PK", "KR", "LS"}
+    assert result.loc[result["pos_abb"].eq("PK"), "public_role"].item() == "K"
+    assert "H" in SPECIAL_TEAMS_ROLES
+
+
+def test_special_teams_preserves_role_and_depth_order() -> None:
+    result = prepare_special_teams(_special_teams_rows())
+
+    assert result["depth_label"].tolist() == ["K1", "LS1", "KR1", "KR2"]
+    assert result.loc[result["pos_abb"].eq("KR"), "player_name"].tolist() == [
+        "Returner One", "Returner Two"
+    ]
+
+
+def test_special_teams_handles_missing_roles_without_placeholders() -> None:
+    result = prepare_special_teams(_special_teams_rows())
+
+    assert "P" not in result["public_role"].tolist()
+    assert "PR" not in result["public_role"].tolist()
+
+
+def test_team_unit_tabs_are_localized_and_include_special_teams() -> None:
+    assert team_unit_tab_labels("EN") == ("Offense", "Defense", "Special Teams")
+    assert team_unit_tab_labels("HU") == ("Támadók", "Védelem", "Speciális egység")
+
+
+def test_special_teams_mobile_layout_is_single_column() -> None:
+    mobile_css = APP_CSS.split("@media (max-width: 760px)", maxsplit=1)[1]
+
+    assert ".nap-special-teams-grid { grid-template-columns:1fr; }" in mobile_css
 
 
 def _team_schedule_rows() -> pd.DataFrame:
