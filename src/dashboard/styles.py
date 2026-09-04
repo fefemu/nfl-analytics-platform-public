@@ -183,11 +183,13 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
   [data-testid="stSidebar"] { min-width:280px; max-width:280px; }
   [data-testid="stHeader"] {
     display:block !important; visibility:visible !important;
-    min-height:3.5rem !important; pointer-events:none !important;
+    min-height:3.5rem !important; pointer-events:auto !important;
   }
   [data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"],
-  [data-testid="stSidebarCollapseButton"] {
+  [data-testid="stSidebarCollapseButton"],
+  [data-testid="stHeader"] button[kind="headerNoPadding"] {
     display:flex !important; visibility:visible !important; opacity:1 !important;
+    pointer-events:auto !important;
     position:fixed !important; top:.55rem !important; left:.55rem !important;
     z-index:1000000 !important; width:2.75rem !important; height:2.75rem !important;
     align-items:center !important; justify-content:center !important;
@@ -197,6 +199,7 @@ div[data-testid="stRadio"] label:has(input:checked) { background:rgba(54,227,154
   [data-testid="collapsedControl"] button, [data-testid="stSidebarCollapsedControl"] button,
   [data-testid="stSidebarCollapseButton"] button {
     display:flex !important; visibility:visible !important; opacity:1 !important;
+    pointer-events:auto !important;
     width:100% !important; height:100% !important; color:var(--text) !important;
   }
   .block-container { padding:.8rem .8rem 6rem; }
