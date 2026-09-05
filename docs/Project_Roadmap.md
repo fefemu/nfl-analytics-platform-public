@@ -96,13 +96,14 @@ The current development area is automated in-season refresh. Prospective snapsho
 | P0 | Audit the append-only forward archive, locked price/model-version fields, snapshot cadence and post-kickoff join boundaries | Completed 2026-09-05 | Completed before the first 2026 regular-season kickoff |
 | P1 | Rename user-facing Edge to Model–market probability gap / Modell–piac eltérés; separate its tooltip and meaning from executable-price EV | Completed 2026-09-05 | Completed |
 | P2 | Document equal-weighted no-vig consensus construction and clarify the Totals → Spread → implied team-score relationship in the app and public documentation | Completed 2026-09-05 | Completed |
-| P3 | Define and implement reproducible prospective CLV, including both line and price movement for Spread and Total | 3–5 person-days | After the archive audit |
+| P3a | Build reproducible Market Movement / Latest Pre-Kickoff Value from the existing Tuesday, Thursday and Sunday snapshots | 2–3 person-days | Next implementation batch |
+| P3b | Add a dedicated event-timed odds snapshot near `kickoff - 60 minutes`, then promote the comparison to prospective CLV | 2–4 person-days | After P3a and API-quota validation |
 | P4 | Build the forward settlement and performance layer for locked 2026 observations: W/L/push, units, ROI, win rate, average odds, Brier, Log Loss and drawdown | 3–4 person-days | After completed games exist |
 | P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | 2–3 person-days | After the performance layer |
 | P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | 1.5–2.5 person-days | Release gate |
 | P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
 
-Estimated total: **11–19 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. P1 and P2 can ship independently in approximately **1.5–2.5 person-days**; the Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.
+Estimated remaining total after P0–P2: **10.5–17.5 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. The Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.
 
 ### Methodology presentation
 
@@ -115,15 +116,20 @@ Estimated total: **11–19 person-days**, or roughly **2–3 focused working wee
 - retain bookmaker weighting, market-quality weighting and closing-market weighting as future research rather than changing aggregation in this backlog item;
 - explain that the Totals Ridge model predicts combined points, the Spread model predicts margin, and displayed team scores are algebraically implied by those two predictions.
 
-### Forward data and CLV
+### Forward data, market movement and CLV
 
-- preserve the original locked prediction, executable price, line, timestamp, selection scope, model name and model version;
-- store later and final pre-kickoff market observations separately from the locked observation;
-- define Moneyline CLV using locked versus closing executable price and a documented implied-probability representation;
-- define Spread and Total CLV using both line movement and price movement, without treating different lines as odds-only comparisons;
+- preserve the first snapshot where a tracked selection/value signal becomes eligible as its immutable entry observation, including prediction, executable price, line, timestamp, selection scope, model name and model version;
+- store every later pre-kickoff market observation separately from the entry observation;
+- in P3a, compare entry with the latest available kickoff-before snapshot from the existing three weekly refreshes and label the result `Market Movement` / `Latest Pre-Kickoff Value`, never `Closing Line Value`;
+- for Moneyline, report entry-to-latest executable odds and implied-probability movement;
+- for Spread and Total, report line movement and price movement together, without treating different lines as an odds-only comparison;
+- retain the existing Tuesday, Thursday and Sunday full production refreshes unchanged;
+- in P3b, add a separate lightweight odds-snapshot job targeted at approximately `kickoff - 60 minutes`; do not rerun the complete production/model pipeline for this capture;
+- group games sharing a kickoff window into one market request where supported, rather than scheduling one redundant full-slate request per game;
+- record planned capture time, actual fetch time and distance from kickoff so snapshot quality is auditable;
+- only call the comparison prospective CLV when an eligible kickoff-near snapshot exists within the documented tolerance; otherwise fall back to the P3a market-movement label;
 - store all operands required to reproduce every displayed CLV value;
 - join final game results only after completion and never recalculate archived predictions with a newer model;
-- audit whether the existing latest-pregame lateral comparison is sufficiently close to kickoff to qualify as the platform's closing observation;
 - keep historical backtest observations physically and semantically separate from the 2026 live forward test.
 
 ### Forward performance output
@@ -133,7 +139,7 @@ At minimum, provide:
 - tracked selection/prediction count and explicit sample size;
 - wins, losses and pushes where applicable;
 - win rate, average odds, flat-stake units and flat-stake ROI;
-- average CLV and positive-CLV percentage;
+- average movement/value and positive-movement percentage, labelled as CLV only for kickoff-near eligible observations;
 - running drawdown and maximum drawdown;
 - Moneyline Brier score and Log Loss;
 - breakdowns by Moneyline, Spread and Total, with optional week, season and positive-EV/recommendation scope filters;
@@ -145,7 +151,8 @@ At minimum, provide:
 - probability disagreement and executable-price EV are visibly distinct;
 - odds-consensus and implied-score methodology are documented consistently;
 - forward ROI contains only genuinely locked, settled forward observations;
-- CLV can be reproduced from stored locked and closing operands, including line changes;
+- market movement and CLV can be reproduced from stored entry/latest/closing operands, including line changes;
+- observations without a qualifying kickoff-near snapshot cannot be labelled as closing or CLV;
 - backtest and live-forward results cannot be confused in storage, calculations or UI;
 - automated unit, data-quality and integration tests cover settlement, pushes, line/price CLV, drawdown, filtering and missing-close handling;
 - existing automated tests remain green and bilingual public documentation is updated.
