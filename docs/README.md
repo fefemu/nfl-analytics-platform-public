@@ -301,6 +301,12 @@ Documents:
 - Moneyline synthetic-price limitation;
 - `analytics.historical_betting_ledger` and `analytics.historical_betting_performance`.
 
+### [Forward Market Movement](data_model/forward_market_movement.md)
+
+Documents the immutable first-signal entry, latest available pre-kickoff comparison,
+Moneyline price movement and directionally normalized Spread/Total line movement.
+It explicitly distinguishes the current tracking output from kickoff-near CLV.
+
 ### Injury, Depth Chart and Player Usage
 
 - `021_player_game_injury_quality_checks.sql`

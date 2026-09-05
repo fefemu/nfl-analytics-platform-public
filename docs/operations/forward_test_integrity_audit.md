@@ -49,13 +49,13 @@ must not recreate historical predictions with the then-current model.
 
 ## Remaining work
 
-- The existing `analytics.forward_tip_clv` view provides a latest-later-pregame
-  comparison for the same outcome and exact line. It must not yet be described as a
-  complete closing-line benchmark.
-- A formal closing-snapshot rule and maximum acceptable distance from kickoff are
-  still required.
-- Spread and Total CLV must incorporate line movement as well as price movement;
-  the current exact-line comparison is only an intermediate implementation.
+- `analytics.forward_tip_market_movement` preserves the first positive-EV entry and
+  compares it with the latest later pregame observation for the same game, market and
+  outcome. It includes both price movement and directionally normalized line movement.
+- The comparison is explicitly marked as latest pre-kickoff market movement, with
+  `is_closing_snapshot = false` and `is_clv = false`.
+- A formal kickoff-near snapshot rule and maximum acceptable distance from kickoff
+  remain required before the platform may describe the metric as CLV.
 - Forward settlement and performance reporting must join results only after games
   are final and remain physically distinct from historical backtests.
 
@@ -63,5 +63,4 @@ must not recreate historical predictions with the then-current model.
 
 The critical lock-time gap identified by this audit is addressed in code and covered
 by regression tests. Hosted-state persistence was verified as already implemented.
-Full CLV methodology and postgame settlement remain the separately scheduled P3 and
-P4 backlog phases.
+Kickoff-near capture (P3b) and postgame settlement (P4) remain separate backlog phases.

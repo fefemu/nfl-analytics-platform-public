@@ -96,7 +96,7 @@ The current development area is automated in-season refresh. Prospective snapsho
 | P0 | Audit the append-only forward archive, locked price/model-version fields, snapshot cadence and post-kickoff join boundaries | Completed 2026-09-05 | Completed before the first 2026 regular-season kickoff |
 | P1 | Rename user-facing Edge to Model–market probability gap / Modell–piac eltérés; separate its tooltip and meaning from executable-price EV | Completed 2026-09-05 | Completed |
 | P2 | Document equal-weighted no-vig consensus construction and clarify the Totals → Spread → implied team-score relationship in the app and public documentation | Completed 2026-09-05 | Completed |
-| P3a | Build reproducible Market Movement / Latest Pre-Kickoff Value from the existing Tuesday, Thursday and Sunday snapshots | 2–3 person-days | Next implementation batch |
+| P3a | Build reproducible Market Movement / Latest Pre-Kickoff Value from the existing Tuesday, Thursday and Sunday snapshots | Completed 2026-09-05 | Completed |
 | P3b | Add a dedicated event-timed odds snapshot near `kickoff - 60 minutes`, then promote the comparison to prospective CLV | 2–4 person-days | After P3a and API-quota validation |
 | P4 | Build the forward settlement and performance layer for locked 2026 observations: W/L/push, units, ROI, win rate, average odds, Brier, Log Loss and drawdown | 3–4 person-days | After completed games exist |
 | P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | 2–3 person-days | After the performance layer |

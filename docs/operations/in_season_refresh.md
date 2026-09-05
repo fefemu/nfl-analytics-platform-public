@@ -60,7 +60,7 @@ There is no implicit default mode. One of `--snapshot` or `--online` is required
 4. rebuild the combined betting board;
 5. archive every future board row;
 6. mark positive-EV rows as forward tip candidates;
-7. refresh prospective CLV comparisons;
+7. refresh latest pre-kickoff market-movement comparisons;
 8. finalize the refresh audit row.
 
 ## Audit and Recovery
@@ -72,7 +72,7 @@ Disconnect DBeaver and other DuckDB writers before running. The generated DuckDB
 ## Forward-Test Outputs
 
 - `analytics.forward_betting_board_archive`: immutable pregame market snapshots;
-- `analytics.forward_tip_clv`: positive-EV candidates with their latest later pregame comparison;
+- `analytics.forward_tip_market_movement`: each selection's first positive-EV entry compared with its latest later pregame snapshot;
 - `analytics.refresh_run_history`: operational run audit.
 
 Only rows whose `commence_time` is later than the odds fetch, prediction generation,

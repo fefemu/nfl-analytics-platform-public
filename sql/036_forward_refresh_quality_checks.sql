@@ -26,11 +26,28 @@ WITH quality_checks AS (
        OR (status = 'SUCCESS' AND archived_market_row_count IS NULL)
        OR (status = 'FAILED' AND error_message IS NULL)
     UNION ALL
-    SELECT 'invalid_clv_comparison_time', COUNT(*)
-    FROM analytics.forward_tip_clv
-    WHERE has_later_market_comparison
-      AND (comparison_fetched_at <= tip_fetched_at
-       OR comparison_fetched_at >= commence_time)
+    SELECT 'invalid_market_movement_comparison_time', COUNT(*)
+    FROM analytics.forward_tip_market_movement
+    WHERE has_latest_pregame_comparison
+      AND (latest_fetched_at <= entry_fetched_at
+       OR latest_fetched_at >= commence_time)
+    UNION ALL
+    SELECT 'invalid_market_movement_label', COUNT(*)
+    FROM analytics.forward_tip_market_movement
+    WHERE comparison_type <> 'LATEST_PRE_KICKOFF'
+       OR is_closing_snapshot
+       OR is_clv
+       OR market_movement_direction NOT IN (
+           'POSITIVE', 'NEGATIVE', 'UNCHANGED', 'NO_LATER_SNAPSHOT'
+       )
+    UNION ALL
+    SELECT 'duplicate_market_movement_entry', COUNT(*)
+    FROM (
+        SELECT game_id, market_key, outcome_type
+        FROM analytics.forward_tip_market_movement
+        GROUP BY ALL
+        HAVING COUNT(*) > 1
+    )
 )
 SELECT check_name, issue_count,
        CASE WHEN issue_count = 0 THEN 'PASS' ELSE 'FAIL' END AS status
