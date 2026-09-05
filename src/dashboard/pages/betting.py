@@ -41,18 +41,20 @@ def _candidate_card(row: pd.Series, language: Language) -> str:
         if language == "HU" else
         "The model-estimated probability that the selected outcome occurs."
     )
-    edge_help = (
-        "A modell becsült valószínűsége és a margin nélküli piaci valószínűség "
-        "közötti abszolút különbség. A megjelenített % érték százalékpont-különbséget "
-        "jelent, nem relatív százalékos változást."
+    gap_label = "Modell–piac eltérés" if language == "HU" else "Model–market gap"
+    gap_help = (
+        "A modell valószínűsége és a fogadóirodánként marginmentesített, egyenlő "
+        "súllyal átlagolt piaci konszenzus közötti különbség. A megjelenített % "
+        "százalékpont-különbséget jelent. Ez piaci véleménykülönbség, nem várható profit."
         if language == "HU" else
-        "Absolute difference between the model probability and the no-vig market probability. "
-        "The displayed % value represents a percentage-point difference, not relative percentage change."
+        "Difference between model probability and the equal-weighted consensus of "
+        "bookmaker-level no-vig probabilities. The displayed % is a percentage-point "
+        "difference. It measures market disagreement, not expected profit."
     )
     ev_help = (
-        "A modell becslése alapján számított várható érték az adott oddson."
+        "A modell valószínűségéből és az elérhető legjobb tényleges oddsból számított várható érték."
         if language == "HU" else
-        "Theoretical long-run return at the displayed odds; not guaranteed profit."
+        "Expected value calculated from model probability and the best available executable odds; not guaranteed profit."
     )
     kickoff = format_utc_timestamp_in_hungary(row["commence_time"])
     if language == "HU":
@@ -66,7 +68,7 @@ def _candidate_card(row: pd.Series, language: Language) -> str:
       <div class="nap-candidate-market">{escape(market_display(row))}</div>
       <div class="nap-candidate-grid">
         <span>{model_label}{tooltip_icon(model_help, accessible_label=model_help)} <b>{row['model_probability']:.1%}</b></span>
-        <span>Edge{tooltip_icon(edge_help, accessible_label=edge_help)} <b class="nap-positive">{_signed_number(row['probability_edge_percentage_points'], language, '%')}</b></span>
+        <span>{gap_label}{tooltip_icon(gap_help, accessible_label=gap_help)} <b class="nap-positive">{_signed_number(row['probability_edge_percentage_points'], language, '%')}</b></span>
         <span>EV{tooltip_icon(ev_help, accessible_label=ev_help, align="right")} <b class="nap-positive">{_signed_number(row['expected_value_percent'], language, '%')}</b></span>
       </div>
       <div class="nap-candidate-footer"><span>{escape(str(row['best_bookmaker_title']))} · {decimal_odds}</span></div>
@@ -254,19 +256,20 @@ def render_betting_board(
                 help=("A modell által becsült valószínűség az adott kimenetelre." if language == "HU" else "Model-estimated probability of the outcome."),
             ),
             "edge_display": st.column_config.TextColumn(
-                "Edge",
+                "Modell–piac eltérés" if language == "HU" else "Model–market gap",
                 help=(
-                    "A modell becsült valószínűsége és a margin nélküli piaci valószínűség "
-                    "közötti abszolút különbség. A megjelenített % érték százalékpont-különbséget "
-                    "jelent, nem relatív százalékos változást."
+                    "A modell valószínűsége és a fogadóirodánként marginmentesített, egyenlő "
+                    "súllyal átlagolt piaci konszenzus közötti különbség. A megjelenített % "
+                    "százalékpont-különbséget jelent; nem várható profit."
                     if language == "HU" else
-                    "Absolute difference between the model probability and the no-vig market probability. "
-                    "The displayed % value represents a percentage-point difference, not relative percentage change."
+                    "Difference between model probability and the equal-weighted consensus of "
+                    "bookmaker-level no-vig probabilities. The displayed % is a percentage-point "
+                    "difference, not expected profit."
                 ),
             ),
             "expected_value_percent": st.column_config.NumberColumn(
                 "EV", format="%.1f",
-                help=("Az odds és a modell valószínűsége alapján számított elméleti várható hozam; nem garantált profit." if language == "HU" else "Theoretical expected return from odds and model probability; not guaranteed profit."),
+                help=("A modell valószínűségéből és az elérhető legjobb tényleges oddsból számított várható érték; nem garantált profit." if language == "HU" else "Expected value calculated from model probability and the best available executable odds; not guaranteed profit."),
             ),
             "decimal_odds": st.column_config.TextColumn(
                 "Legjobb odds" if language == "HU" else "Best odds",

@@ -29,6 +29,7 @@ def test_game_center_hero_contains_predictions_and_team_logos() -> None:
     assert "BUF 44.3 percent, KC 55.7 percent" in markup
     assert "24.1 – 27.4" in markup
     assert "VÁRHATÓ KÜLÖNBSÉG" in markup
+    assert "nem két önálló csapatpontszám" in markup
     assert "1. HÉT" in markup
     assert markup.count("nap-team-logo") == 2
     assert markup.count("Lényegében változatlan") == 2
@@ -48,13 +49,13 @@ def test_preferred_market_label_formats_spread_and_total() -> None:
 
 def test_edge_status_distinguishes_positive_negative_and_displayed_zero() -> None:
     assert _edge_status(18.5, "EN") == (
-        "Positive model edge", "nap-positive", "positive",
+        "Model above market", "nap-positive", "positive",
     )
     assert _edge_status(-19.5, "EN") == (
-        "Negative model edge", "nap-negative", "negative",
+        "Model below market", "nap-negative", "negative",
     )
     assert _edge_status(-0.04, "HU") == (
-        "Nincs modell-előny", "nap-neutral", "neutral",
+        "Piaccal egyező becslés", "nap-neutral", "neutral",
     )
 
 

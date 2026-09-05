@@ -32,7 +32,7 @@ The application provides:
 - Leakage-safe feature engineering and chronological model validation.
 - Production models for win probability, expected margin and total points.
 - Explicit, validated fallback models for incomplete current-season data.
-- Betting-market comparison using no-vig probabilities, Edge and expected value.
+- Betting-market comparison using no-vig consensus probabilities, model–market probability gaps and expected value.
 - Automated testing, data-quality gates and scheduled GitHub Actions refreshes.
 - An interactive, responsive and bilingual Streamlit application.
 
@@ -239,7 +239,7 @@ performance and closing-line movement can be evaluated prospectively.
 
 ## Disclaimer
 
-Predictions are probabilistic estimates, not guaranteed outcomes. Positive Edge
-or expected value does not guarantee that an individual wager will be
+Predictions are probabilistic estimates, not guaranteed outcomes. A positive
+model–market probability gap or expected value does not guarantee that an individual wager will be
 profitable. The platform is an independent analytics project and is not
 affiliated with the NFL or its teams.

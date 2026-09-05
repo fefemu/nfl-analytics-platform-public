@@ -26,7 +26,7 @@ It serves as a shared reference for the repository documentation, Data Science L
 | Away Win Probability | Modeling | The model probability that the away team wins. For a binary no-tie pregame model it equals one minus the home win probability. |
 | Backtest | Model Evaluation | Historical evaluation of a model or betting rule using only information that would have been available at each historical decision time. |
 | Best Available Odds | Betting | The highest currently available bookmaker price for one equivalent betting outcome and market line. |
-| Betting Edge | Betting | The model probability minus the no-vig market probability, usually expressed in percentage points. |
+| Model–Market Probability Gap | Betting | Model probability minus the equal-weighted consensus of bookmaker-level no-vig probabilities. It measures disagreement, not expected profit. |
 | Brier Score | Model Evaluation | The mean squared error of predicted probabilities against binary outcomes. Lower values are better. |
 | Calibration | Model Evaluation | The agreement between predicted probabilities andq observed outcome frequencies. A calibrated 60% prediction should occur successfully about 60% of the time. |
 | Closing Line | Betting | The final market price or line available shortly before a game begins. |

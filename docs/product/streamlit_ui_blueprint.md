@@ -110,7 +110,7 @@ Default filters are conservative and user-visible:
 - minimum bookmaker coverage;
 - market selector: Moneyline, Spread, Totals;
 - week, team and bookmaker;
-- minimum probability edge and EV;
+- minimum model–market probability gap and EV;
 - primary/fallback prediction mode.
 
 The default view is one best candidate card per game and market. An expandable table
@@ -123,7 +123,7 @@ Candidate fields:
 - market/outcome/line;
 - best available odds and bookmaker count;
 - model probability and no-vig market probability;
-- edge and expected value;
+- model–market probability gap and expected value;
 - prediction mode and freshness;
 - later, prospective CLV state.
 

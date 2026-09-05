@@ -297,7 +297,7 @@ Documents:
 
 - 2021–2024 expanding-window OOF market evaluation;
 - flat-stake ROI and drawdown;
-- edge-bucket and opening-to-close movement diagnostics;
+- probability-gap bucket and opening-to-close movement diagnostics;
 - Moneyline synthetic-price limitation;
 - `analytics.historical_betting_ledger` and `analytics.historical_betting_performance`.
 

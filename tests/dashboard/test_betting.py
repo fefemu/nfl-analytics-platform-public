@@ -25,6 +25,8 @@ def test_hungarian_candidate_card_uses_decimal_odds_without_routing_label() -> N
     assert "FALLBACK" not in markup
     assert "PRIMARY" not in markup
     assert "+8,0%" in markup
+    assert "Modell–piac eltérés" in markup
+    assert "nem várható profit" in markup
     assert "százalékpont-különbséget" in markup
     assert " pp" not in markup
 

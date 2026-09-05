@@ -88,7 +88,7 @@ DIAGRAM_TRANSLATIONS = {
         "The Odds API → snapshot": "The Odds API → snapshot",
         "→ processed odds": "→ processed odds",
         "6. Piaci számítások": "6. Market calculations",
-        "no-vig probability → Edge → EV": "no-vig probability → Edge → EV",
+        "no-vig consensus → gap → EV": "no-vig consensus → gap → EV",
         "→ Betting Board": "→ Betting Board",
         "Ellenőrzések": "Checks",
         "Kickoff előtti előrejelzések rögzítése": "Archive pre-kickoff predictions",
@@ -311,6 +311,29 @@ def _model_inputs(language: Language) -> None:
         if language == "HU" else
         "Not every model uses every listed input: win, Spread and Total models solve different prediction tasks."
     )
+
+
+def _market_methodology(language: Language) -> None:
+    if language == "HU":
+        st.write(
+            "Az azonos piacokat és vonalakat fogadóirodánként marginmentesítjük, majd az így kapott "
+            "valószínűségeket egyenlő súllyal átlagoljuk. A modell–piac eltérés ezt a konszenzust "
+            "hasonlítja a modellhez; az EV ettől külön, a legjobb elérhető tényleges oddsból készül."
+        )
+        st.write(
+            "A Total Ridge modell az összpontszámot, a Spread modell a pontkülönbséget becsüli. "
+            "A kijelzett csapatpontszámok e két becslésből származnak, nem két külön becslés összegéből."
+        )
+    else:
+        st.write(
+            "Equivalent markets and matching lines are de-vigged bookmaker by bookmaker, then averaged "
+            "with equal weight. The model–market gap compares the model with that consensus; EV is "
+            "separate and uses the best available executable price."
+        )
+        st.write(
+            "The Total Ridge model predicts combined points and the Spread model predicts margin. "
+            "Displayed team scores are derived from those estimates, not independently predicted and added."
+        )
 
 
 def _validation(language: Language) -> None:
@@ -539,7 +562,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
         )
         headings = (
             "Mit kap a felhasználó?", "Hogyan lesz a nyers adatból előrejelzés?",
-            "Adatforrások", "Mit vesznek figyelembe a modellek?",
+            "Adatforrások", "Mit vesznek figyelembe a modellek?", "Piaci módszertan",
             "Hogyan ellenőrizzük a modelleket?", "Automatikus frissítés", "Technikai háttér",
             "A projektről és rólam",
         )
@@ -553,8 +576,8 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
         )
         headings = (
             "What does the user get?", "How does raw data become a prediction?",
-            "Data sources", "What do the models consider?", "How are models checked?",
-            "Automatic refresh", "Technical background", "About the project and me",
+            "Data sources", "What do the models consider?", "Market methodology",
+            "How are models checked?", "Automatic refresh", "Technical background", "About the project and me",
         )
     st.markdown(f"### {headings[0]}")
     _feature_cards(language)
@@ -566,10 +589,12 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
     st.markdown(f"### {headings[3]}")
     _model_inputs(language)
     st.markdown(f"### {headings[4]}")
-    _validation(language)
+    _market_methodology(language)
     st.markdown(f"### {headings[5]}")
-    _automatic_refresh(language)
+    _validation(language)
     st.markdown(f"### {headings[6]}")
+    _automatic_refresh(language)
+    st.markdown(f"### {headings[7]}")
     st.write(
         "A platform három nézetben mutatja be a technikai megvalósítást: az Architektúra "
         "a használt technológiákat, az Adatmodell a DuckDB adatrétegeit és tábláit, az "
@@ -580,7 +605,7 @@ def render_about(language: Language = DEFAULT_LANGUAGE) -> None:
     )
     _diagrams(language)
     _source_and_data_management(language)
-    st.markdown(f"### {headings[7]}")
+    st.markdown(f"### {headings[8]}")
     _author(language)
     st.warning(
         "Az előrejelzések valószínűségi becslések, nem garantált kimenetek. A pozitív "

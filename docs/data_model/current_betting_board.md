@@ -23,7 +23,7 @@ For every offer the layer estimates:
 
 - win, push and loss probability;
 - no-push win probability;
-- probability edge versus consensus no-vig probability;
+- model–market probability gap versus equal-weighted consensus no-vig probability;
 - fair decimal odds;
 - expected value per unit and percent;
 - full Kelly fraction;
@@ -39,7 +39,7 @@ The combined board standardizes:
 - best bookmaker and price;
 - model identity and routing mode;
 - model, push and loss probabilities;
-- probability edge;
+- model–market probability gap (stored in legacy internal `probability_edge*` fields);
 - fair odds;
 - EV and Kelly sizing;
 - generation timestamps.
@@ -66,3 +66,9 @@ python -m src.utils.run_sql sql/033_current_betting_board_quality_checks.sql
 ```
 
 EV is a model estimate, not a guaranteed return. Prospective ROI and CLV evaluation remain required before operational betting decisions.
+
+## Market Consensus and Score Construction
+
+Equivalent markets and matching lines are paired bookmaker by bookmaker. Margin is removed within each bookmaker first, and the resulting no-vig probabilities are combined as an equal-weighted consensus. The model–market probability gap compares the model with that benchmark. EV is calculated separately from model probability and the best available executable price.
+
+The Total Ridge model directly predicts combined points and the Spread model predicts margin. Displayed team scores are algebraically derived from those two estimates; they are not independently predicted and added.

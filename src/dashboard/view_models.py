@@ -198,7 +198,7 @@ def top_pick_criteria_text(language: str) -> str:
         return (
             f"Aktuális feltételek: legalább {probability:.0f}% modellvalószínűség, "
             f"{criteria.minimum_edge_percentage_points:g}–"
-            f"{criteria.maximum_edge_percentage_points:g}% Edge, "
+            f"{criteria.maximum_edge_percentage_points:g}% modell–piac eltérés, "
             f"{criteria.minimum_expected_value_percent:g}–"
             f"{criteria.maximum_expected_value_percent:g}% EV és legalább "
             f"{criteria.minimum_bookmakers} fogadóiroda."
@@ -206,7 +206,7 @@ def top_pick_criteria_text(language: str) -> str:
     return (
         f"Current criteria: at least {probability:.0f}% model probability, "
         f"{criteria.minimum_edge_percentage_points:g}–"
-        f"{criteria.maximum_edge_percentage_points:g}% Edge, "
+        f"{criteria.maximum_edge_percentage_points:g}% model–market gap, "
         f"{criteria.minimum_expected_value_percent:g}–"
         f"{criteria.maximum_expected_value_percent:g}% EV and at least "
         f"{criteria.minimum_bookmakers} bookmakers."

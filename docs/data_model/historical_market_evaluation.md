@@ -32,7 +32,7 @@ The `clv_value` field is a retrospective opening-to-close market-movement diagno
 
 ## Interpretation
 
-ROI is calculated with one unit staked per selection. It does not include stake sizing, limits, transaction costs or execution constraints. Edge buckets are diagnostic and must not be promoted into betting rules merely because one historical bucket is profitable.
+ROI is calculated with one unit staked per selection. It does not include stake sizing, limits, transaction costs or execution constraints. Model–market probability-gap buckets are diagnostic and must not be promoted into betting rules merely because one historical bucket is profitable.
 
 Run quality checks with:
 

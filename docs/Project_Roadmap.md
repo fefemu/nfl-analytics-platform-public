@@ -51,7 +51,7 @@ The current production system provides:
 - Moneyline, Spread and Totals expected-value tables;
 - a combined cross-market betting board;
 - a leakage-safe 2021–2024 historical closing-market benchmark and virtual ledger;
-- flat-stake ROI, edge-bucket, drawdown and opening-to-close movement reporting;
+- flat-stake ROI, probability-gap bucket, drawdown and opening-to-close movement reporting;
 - algebraically consistent model-implied home and away scores;
 - external-nfelo initialized dynamic and frozen season simulations.
 
@@ -94,8 +94,8 @@ The current development area is automated in-season refresh. Prospective snapsho
 | Phase | Scope | Estimate | Target order |
 |------|-------|----------|--------------|
 | P0 | Audit the append-only forward archive, locked price/model-version fields, snapshot cadence and post-kickoff join boundaries | Completed 2026-09-05 | Completed before the first 2026 regular-season kickoff |
-| P1 | Rename user-facing Edge to Model–market probability gap / Modell–piac valószínűségi eltérés; separate its tooltip and meaning from executable-price EV | 1–1.5 person-days | First implementation batch |
-| P2 | Document equal-weighted no-vig consensus construction and clarify the Totals → Spread → implied team-score relationship in the app and public documentation | 0.5–1 person-day | First implementation batch |
+| P1 | Rename user-facing Edge to Model–market probability gap / Modell–piac eltérés; separate its tooltip and meaning from executable-price EV | Completed 2026-09-05 | Completed |
+| P2 | Document equal-weighted no-vig consensus construction and clarify the Totals → Spread → implied team-score relationship in the app and public documentation | Completed 2026-09-05 | Completed |
 | P3 | Define and implement reproducible prospective CLV, including both line and price movement for Spread and Total | 3–5 person-days | After the archive audit |
 | P4 | Build the forward settlement and performance layer for locked 2026 observations: W/L/push, units, ROI, win rate, average odds, Brier, Log Loss and drawdown | 3–4 person-days | After completed games exist |
 | P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | 2–3 person-days | After the performance layer |
@@ -664,7 +664,7 @@ The joint spread and totals outputs now produce algebraically consistent model-i
 
 ---
 
-## M12 — Betting Edge and Expected Value
+## M12 — Model–Market Probability Gap and Expected Value
 
 **Status:** Completed for first generation
 
@@ -672,7 +672,7 @@ Delivered:
 
 - model probability;
 - no-vig market probability;
-- probability edge;
+- model–market probability gap;
 - available decimal odds;
 - expected value;
 - bookmaker and timestamp;
@@ -680,7 +680,7 @@ Delivered:
 - closing-market historical benchmark using expanding-window OOF predictions;
 - virtual flat-stake betting ledger;
 - ROI, win rate, push rate and maximum drawdown;
-- edge-bucket analysis;
+- probability-gap bucket analysis;
 - opening-to-close market-movement diagnostics where available.
 
 Moneyline historical return uses a synthetic no-vig closing price because complete bookmaker Moneyline prices are unavailable in the external history. Spread and Totals use recorded closing prices. True prospective CLV depends on timestamped in-season snapshots and must not be inferred from this retrospective benchmark.

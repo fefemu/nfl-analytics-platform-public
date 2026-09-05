@@ -32,6 +32,15 @@ def _hero(row: pd.Series, language: Language = DEFAULT_LANGUAGE) -> str:
     score_label = "VÁRHATÓ EREDMÉNY" if language == "HU" else "MODEL SCORE"
     margin_label = "VÁRHATÓ KÜLÖNBSÉG" if language == "HU" else "HOME MARGIN"
     total_label = "VÁRHATÓ ÖSSZPONTSZÁM" if language == "HU" else "MODEL TOTAL"
+    score_help = (
+        "Az összpontszámot külön Total modell, a pontkülönbséget külön Spread modell "
+        "becsüli. A kijelzett csapatpontszámok ebből a két értékből származnak; nem "
+        "két önálló csapatpontszám összeadásával készülnek."
+        if language == "HU" else
+        "A dedicated Total model predicts combined points and a separate Spread model "
+        "predicts margin. The displayed team scores are derived from those two estimates; "
+        "they are not independently predicted and added together."
+    )
     away_trend = probability_trend_badge(
         row.get("away_probability_trend"), row.get("away_probability_change_pp"), language,
         previous_probability=row.get("away_previous_win_probability"),
@@ -54,9 +63,9 @@ def _hero(row: pd.Series, language: Language = DEFAULT_LANGUAGE) -> str:
       {probability_bar(away, row['away_win_probability'], home, row['home_win_probability'])}
       <div class="nap-game-trends"><span>{away_trend}</span><span>{home_trend}</span></div>
       <div class="nap-prediction-grid">
-        <div class="nap-prediction-tile"><span>{score_label}</span><b>{row['implied_away_score']:.1f} – {row['implied_home_score']:.1f}</b></div>
+        <div class="nap-prediction-tile"><span>{score_label}{tooltip_icon(score_help, accessible_label=score_help)}</span><b>{row['implied_away_score']:.1f} – {row['implied_home_score']:.1f}</b></div>
         <div class="nap-prediction-tile"><span>{margin_label}</span><b>{row['predicted_home_margin']:+.1f}</b></div>
-        <div class="nap-prediction-tile"><span>{total_label}</span><b>{row['predicted_total_points']:.1f}</b></div>
+        <div class="nap-prediction-tile"><span>{total_label}{tooltip_icon(score_help, accessible_label=score_help, align="right")}</span><b>{row['predicted_total_points']:.1f}</b></div>
       </div>
     </div>
     """
@@ -107,9 +116,9 @@ def _render_market(
     if market_board.empty or "game_id" not in market_board:
         empty_state(
             "Market comparison is not available" if language == "EN" else "A market összehasonlítás nem elérhető",
-            "Run the odds pipeline to add current prices and model-versus-market edges."
+            "Run the odds pipeline to add current prices and model–market probability gaps."
             if language == "EN" else
-            "Futtasd az odds pipeline-t az aktuális árak és model-versus-market edge-ek betöltéséhez.",
+            "Futtasd az odds pipeline-t az aktuális árak és modell–piac eltérések betöltéséhez.",
         )
         return
     forward = prepare_forward_candidates(
@@ -129,8 +138,9 @@ def _render_market(
     title = "Piaci értékelés" if language == "HU" else "Market assessment"
     explanation = (
         "A modell becslése és a fogadóirodák aktuális árazásának összehasonlítása. "
-        "A pozitív Edge azt jelzi, hogy a modell nagyobb esélyt ad az adott "
-        "kimenetelnek, mint a piac."
+        "A pozitív modell–piac eltérés azt jelzi, hogy a modell nagyobb esélyt ad az "
+        "adott kimenetelnek, mint a margin nélküli piaci konszenzus. Ez nem azonos a "
+        "legjobb elérhető oddsból számított EV-vel."
         if language == "HU" else
         "The model-preferred side in each market, compared with current bookmaker pricing. "
         "The more likely model outcome is not necessarily a value bet."
@@ -162,12 +172,13 @@ def _render_market(
                 if language == "HU" else "The market probability after removing bookmaker margin."
             )
             edge_help = (
-                "A modell becsült valószínűsége és a margin nélküli piaci valószínűség "
-                "közötti abszolút különbség. A megjelenített % érték százalékpont-különbséget "
-                "jelent, nem relatív százalékos változást."
+                "A modell valószínűsége és a fogadóirodánként marginmentesített, egyenlő "
+                "súllyal átlagolt piaci konszenzus közötti különbség. A megjelenített % "
+                "százalékpont-különbséget jelent. Ez nem várható profit."
                 if language == "HU" else
-                "Absolute difference between the model probability and the no-vig market probability. "
-                "The displayed % value represents a percentage-point difference, not relative percentage change."
+                "Difference between model probability and the equal-weighted consensus of "
+                "bookmaker-level no-vig probabilities. The displayed % is a percentage-point "
+                "difference. It is not expected profit."
             )
             odds_help = (
                 "Az adott kimenetelhez jelenleg elérhető legjobb ár a betöltött fogadóirodák között."
@@ -201,8 +212,9 @@ def _render_market(
             )
             st.markdown(card, unsafe_allow_html=True)
     st.caption(
-        "A pozitív Edge nem jelent garantált nyereséget."
-        if language == "HU" else "A positive Edge does not guarantee profit."
+        "A pozitív modell–piac eltérés nem jelent pozitív EV-t vagy garantált nyereséget."
+        if language == "HU" else
+        "A positive model–market gap does not imply positive EV or guaranteed profit."
     )
 
 
@@ -225,18 +237,18 @@ def _edge_status(edge: float, language: Language) -> tuple[str, str, str]:
     displayed_edge = round(float(edge), 1)
     if displayed_edge > 0:
         return (
-            "Pozitív modell-előny" if language == "HU" else "Positive model edge",
+            "Modell a piac felett" if language == "HU" else "Model above market",
             "nap-positive",
             "positive",
         )
     if displayed_edge < 0:
         return (
-            "Negatív modell-előny" if language == "HU" else "Negative model edge",
+            "Modell a piac alatt" if language == "HU" else "Model below market",
             "nap-negative",
             "negative",
         )
     return (
-        "Nincs modell-előny" if language == "HU" else "No model edge",
+        "Piaccal egyező becslés" if language == "HU" else "Aligned with market",
         "nap-neutral",
         "neutral",
     )

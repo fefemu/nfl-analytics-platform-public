@@ -364,6 +364,17 @@ def _production_interpretation(language: Language) -> None:
             "probability rather than simply selecting the expected winner."
         )
     )
+    st.info(
+        (
+            "A margin eltávolítása fogadóirodánként történik, majd a valószínűségek egyenlő súlyú "
+            "konszenzust alkotnak. A modell–piac eltérés ezt méri; az EV külön, a legjobb elérhető "
+            "tényleges oddsot használja."
+        ) if language == "HU" else (
+            "Bookmaker margin is removed book by book and the probabilities form an equal-weighted "
+            "consensus. The model–market gap measures that disagreement; EV separately uses the best "
+            "available executable price."
+        )
+    )
 
 
 def _metric_table(language: Language) -> None:
@@ -870,4 +881,5 @@ def render_data_science_lab(
     _candidate_progression(scorecard, language)
     _results_section(scorecard, seasons, language)
     _production_model_card(registry, scorecard, language)
+    _production_interpretation(language)
     _impact_analysis(impacts, language)
