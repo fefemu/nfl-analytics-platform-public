@@ -12,6 +12,7 @@ CLV_VIEW = "analytics.forward_tip_clv"
 ARCHIVE_COLUMNS = (
     "archive_key", "refresh_run_id", *BOARD_COLUMNS, "is_tip_candidate", "archived_at",
 )
+IMMUTABLE_PAYLOAD_COLUMNS = (*BOARD_COLUMNS, "is_tip_candidate")
 
 
 def prepare_forward_archive_rows(
@@ -26,9 +27,31 @@ def prepare_forward_archive_rows(
     if not str(refresh_run_id).strip():
         raise ValueError("Refresh run ID must not be empty.")
     rows = board.loc[:, BOARD_COLUMNS].copy()
-    rows["fetched_at"] = pd.to_datetime(rows["fetched_at"], utc=True)
-    rows["commence_time"] = pd.to_datetime(rows["commence_time"], utc=True)
-    rows = rows.loc[rows["commence_time"] > rows["fetched_at"]].copy()
+    for column in (
+        "fetched_at",
+        "commence_time",
+        "prediction_generated_at",
+        "betting_board_generated_at",
+    ):
+        rows[column] = pd.to_datetime(rows[column], utc=True, errors="coerce")
+    if archived_at is None:
+        archived_at = datetime.now(timezone.utc)
+    lock_time = pd.Timestamp(archived_at)
+    if lock_time.tzinfo is None:
+        lock_time = lock_time.tz_localize("UTC")
+    else:
+        lock_time = lock_time.tz_convert("UTC")
+    rows["archived_at"] = lock_time
+    rows = rows.loc[
+        rows["commence_time"].notna()
+        & rows["fetched_at"].notna()
+        & rows["prediction_generated_at"].notna()
+        & rows["betting_board_generated_at"].notna()
+        & (rows["commence_time"] > rows["fetched_at"])
+        & (rows["commence_time"] > rows["prediction_generated_at"])
+        & (rows["commence_time"] > rows["betting_board_generated_at"])
+        & (rows["commence_time"] > rows["archived_at"])
+    ].copy()
     if rows.empty:
         raise RuntimeError("No future betting-board rows are available for archival.")
     identity = rows[[
@@ -38,9 +61,6 @@ def prepare_forward_archive_rows(
     rows.insert(0, "refresh_run_id", str(refresh_run_id))
     rows.insert(0, "archive_key", identity.map(lambda value: __import__("hashlib").sha256(value.encode()).hexdigest()))
     rows["is_tip_candidate"] = rows["positive_expected_value"].astype(bool)
-    if archived_at is None:
-        archived_at = datetime.now(timezone.utc)
-    rows["archived_at"] = pd.Timestamp(archived_at)
     return rows.loc[:, ARCHIVE_COLUMNS].sort_values(
         ["fetched_at", "commence_time", "game_id", "market_key", "outcome_type"]
     ).reset_index(drop=True)
@@ -57,7 +77,28 @@ def persist_forward_archive(
         connection.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {ARCHIVE_TABLE} AS
-            SELECT * FROM _forward_archive_rows WHERE FALSE;
+            SELECT * FROM _forward_archive_rows WHERE FALSE
+            """
+        )
+        distinct_payload = " OR ".join(
+            f'target."{column}" IS DISTINCT FROM source."{column}"'
+            for column in IMMUTABLE_PAYLOAD_COLUMNS
+        )
+        conflicts = connection.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM _forward_archive_rows AS source
+            JOIN {ARCHIVE_TABLE} AS target
+              ON target.archive_key = source.archive_key
+            WHERE {distinct_payload}
+            """
+        ).fetchone()[0]
+        if conflicts:
+            raise RuntimeError(
+                "Forward archive key already exists with different locked values."
+            )
+        connection.execute(
+            f"""
             INSERT INTO {ARCHIVE_TABLE}
             SELECT source.* FROM _forward_archive_rows AS source
             WHERE NOT EXISTS (
@@ -124,6 +165,9 @@ def validate_forward_archive(connection: duckdb.DuckDBPyConnection) -> None:
         f"""
         SELECT COUNT(*) FROM {ARCHIVE_TABLE}
         WHERE commence_time <= fetched_at
+           OR commence_time <= prediction_generated_at
+           OR commence_time <= betting_board_generated_at
+           OR commence_time <= archived_at
            OR archive_key IS NULL
            OR refresh_run_id IS NULL
            OR archived_at IS NULL

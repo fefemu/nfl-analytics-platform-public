@@ -10,6 +10,9 @@ WITH quality_checks AS (
     SELECT 'post_kickoff_archive_row', COUNT(*)
     FROM analytics.forward_betting_board_archive
     WHERE commence_time <= fetched_at
+       OR commence_time <= prediction_generated_at
+       OR commence_time <= betting_board_generated_at
+       OR commence_time <= archived_at
     UNION ALL
     SELECT 'invalid_tip_candidate_flag', COUNT(*)
     FROM analytics.forward_betting_board_archive

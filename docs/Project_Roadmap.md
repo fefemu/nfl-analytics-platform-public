@@ -3,7 +3,7 @@
 **Project:** NFL Analytics Platform
 **Version:** 0.1.0
 **Status:** Active
-**Last Updated:** 2026-08-14
+**Last Updated:** 2026-09-04
 
 ---
 
@@ -78,6 +78,143 @@ The current development area is automated in-season refresh. Prospective snapsho
 | M13 | Automated in-season refresh workflows | Completed for first generation |
 | M14 | Streamlit public application | Planned |
 | M15 | Version 1.0 documentation and release | Planned |
+
+---
+
+## Prioritized Backlog — Betting Methodology and 2026 Forward Performance
+
+**Added:** 2026-09-04
+
+**Priority:** High
+
+**Scope constraint:** Reuse the existing snapshot/archive pipeline and do not change production prediction models.
+
+### Delivery sequence
+
+| Phase | Scope | Estimate | Target order |
+|------|-------|----------|--------------|
+| P0 | Audit the append-only forward archive, locked price/model-version fields, snapshot cadence and post-kickoff join boundaries | Completed 2026-09-05 | Completed before the first 2026 regular-season kickoff |
+| P1 | Rename user-facing Edge to Model–market probability gap / Modell–piac valószínűségi eltérés; separate its tooltip and meaning from executable-price EV | 1–1.5 person-days | First implementation batch |
+| P2 | Document equal-weighted no-vig consensus construction and clarify the Totals → Spread → implied team-score relationship in the app and public documentation | 0.5–1 person-day | First implementation batch |
+| P3 | Define and implement reproducible prospective CLV, including both line and price movement for Spread and Total | 3–5 person-days | After the archive audit |
+| P4 | Build the forward settlement and performance layer for locked 2026 observations: W/L/push, units, ROI, win rate, average odds, Brier, Log Loss and drawdown | 3–4 person-days | After completed games exist |
+| P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | 2–3 person-days | After the performance layer |
+| P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | 1.5–2.5 person-days | Release gate |
+| P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
+
+Estimated total: **11–19 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. P1 and P2 can ship independently in approximately **1.5–2.5 person-days**; the Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.
+
+### Methodology presentation
+
+- replace standalone user-facing `Edge` terminology with `Model–market probability gap`;
+- use `Modell–piac valószínűségi eltérés` in Hungarian and retain `%` as the display convention;
+- define the gap as model probability minus equal-weighted consensus no-vig probability;
+- state explicitly that the gap measures disagreement with the market, not expected betting profit;
+- keep EV separate and calculate it from model probability and the best available executable price;
+- document that equivalent markets and matching lines are normalized bookmaker by bookmaker before the no-vig probabilities are averaged;
+- retain bookmaker weighting, market-quality weighting and closing-market weighting as future research rather than changing aggregation in this backlog item;
+- explain that the Totals Ridge model predicts combined points, the Spread model predicts margin, and displayed team scores are algebraically implied by those two predictions.
+
+### Forward data and CLV
+
+- preserve the original locked prediction, executable price, line, timestamp, selection scope, model name and model version;
+- store later and final pre-kickoff market observations separately from the locked observation;
+- define Moneyline CLV using locked versus closing executable price and a documented implied-probability representation;
+- define Spread and Total CLV using both line movement and price movement, without treating different lines as odds-only comparisons;
+- store all operands required to reproduce every displayed CLV value;
+- join final game results only after completion and never recalculate archived predictions with a newer model;
+- audit whether the existing latest-pregame lateral comparison is sufficiently close to kickoff to qualify as the platform's closing observation;
+- keep historical backtest observations physically and semantically separate from the 2026 live forward test.
+
+### Forward performance output
+
+At minimum, provide:
+
+- tracked selection/prediction count and explicit sample size;
+- wins, losses and pushes where applicable;
+- win rate, average odds, flat-stake units and flat-stake ROI;
+- average CLV and positive-CLV percentage;
+- running drawdown and maximum drawdown;
+- Moneyline Brier score and Log Loss;
+- breakdowns by Moneyline, Spread and Total, with optional week, season and positive-EV/recommendation scope filters;
+- a prominent warning that a small forward sample is not evidence of sustainable profitability.
+
+### Acceptance gates
+
+- no misleading standalone Edge label remains in the application or public documentation;
+- probability disagreement and executable-price EV are visibly distinct;
+- odds-consensus and implied-score methodology are documented consistently;
+- forward ROI contains only genuinely locked, settled forward observations;
+- CLV can be reproduced from stored locked and closing operands, including line changes;
+- backtest and live-forward results cannot be confused in storage, calculations or UI;
+- automated unit, data-quality and integration tests cover settlement, pushes, line/price CLV, drawdown, filtering and missing-close handling;
+- existing automated tests remain green and bilingual public documentation is updated.
+
+### P7 — Brier calibration baseline and closing-market benchmark
+
+- use the frozen out-of-sample prediction set without refitting or optimizing the model;
+- simulate outcomes as independent Bernoulli draws from the fixed model probabilities and report the mean, median and reference intervals of the resulting Brier distribution;
+- also report the analytical expected Brier under those probabilities as a reproducibility check;
+- calculate model and de-vigged closing-market Brier score and Log Loss on exactly the same eligible games;
+- report paired model-minus-market differences with an appropriate paired bootstrap interval;
+- compare model reliability, closing-market reliability and the simulated reference range where bin sizes are sufficient;
+- label simulation ranges as reference intervals rather than confidence intervals for model skill;
+- explain that a good absolute Brier score does not imply an exploitable betting edge or profitability;
+- keep this task evaluation-only and do not tune the production model against the benchmark sample.
+
+---
+
+## Research Backlog — Offseason Cold Starts and Weather Uncertainty
+
+**Added:** 2026-09-04
+
+**Priority:** Medium, with discovery work before model changes
+
+### R1 — Preseason roster continuity
+
+- quantify returning offensive, defensive and special-teams snaps by team and position group;
+- capture important arrivals, departures and projected starter changes;
+- test whether continuity and turnover features improve Week 1–4 predictions under leakage-safe historical validation;
+- expose additional early-season uncertainty for teams with major roster turnover;
+- do not promote the feature unless it improves chronological validation and a protected holdout.
+
+Estimated effort: **4–7 person-days** for source audit, feature engineering and evaluation.
+
+### R2 — Player-value unit ratings
+
+- investigate player-level value estimates that can be aggregated into offense, defense and special-teams unit strength;
+- keep talent/value measurement separate from the existing player-level injury and availability impact;
+- account for depth order and expected usage without inventing ratings for uncovered players;
+- evaluate whether bottom-up unit ratings add value beyond regressed nfelo team strength.
+
+Estimated effort: **8–15 person-days**, strongly dependent on reliable historical roster and player-value coverage.
+
+### R3 — QB transition and scheme-fit uncertainty
+
+- retain the existing recency-weighted, opponent-adjusted QB rating as the player-performance baseline;
+- investigate explicit new-team, new-coach, new-coordinator and system-transition indicators;
+- model transition uncertainty before attempting a directional scheme-fit adjustment;
+- require time-safe historical coaching and starter data plus chronological validation.
+
+Estimated effort: **5–10 person-days** after data-source feasibility is confirmed.
+
+### R4 — Timestamped pregame weather forecasts
+
+- ingest timestamped forecasts associated with game and expected kickoff time rather than using future actual weather;
+- refresh forecasts during scheduled production runs while preserving each forecast vintage;
+- record forecast horizon, issue time, source and missingness;
+- use neutral weather values and the existing availability indicator when no eligible forecast exists;
+- evaluate forecast-horizon reliability and consider uncertainty/shrinkage for distant forecasts;
+- ensure locked predictions retain the exact forecast vintage used.
+
+Estimated effort: **5–8 person-days** for ingestion, archival, modeling integration, validation and documentation, excluding any paid-source procurement.
+
+### Recommended order
+
+1. R1 roster continuity, because it directly addresses the largest Week 1 cold-start limitation.
+2. R4 timestamped weather forecasts, because the current system deliberately avoids treating future actual weather as known.
+3. R3 QB transition uncertainty.
+4. R2 full player-value unit ratings, after historical source feasibility is established.
 
 ---
 
@@ -633,6 +770,43 @@ Planned product areas:
 - richer calibration and feature-contribution charts as monitoring history grows;
 - SHAP if a nonlinear production model is promoted;
 - deployment, product analytics and automated public refresh.
+
+### Deferred UI Backlog
+
+#### In-place Weekly Overview navigation
+
+- Open matchup details from Weekly Overview in the current browser tab instead
+  of a new tab or window.
+
+#### Game Center market evaluation cards
+
+- Replace the current multi-row market comparison with three responsive cards:
+  Moneyline, Spread and Total.
+- Show exactly one model-preferred outcome per market type while keeping model
+  preference separate from betting value. A preferred outcome must remain the
+  preferred outcome even when its current price produces zero or negative edge.
+- Reuse existing prediction, market and value outputs; do not introduce a new
+  prediction model or UI-only probability calculation.
+- Each card must show the preferred outcome, model probability, no-vig market
+  probability, edge in percentage points, best available odds, bookmaker and a
+  value status.
+- Reuse an existing project value/edge threshold where available. Otherwise,
+  implement configurable thresholds for `VALUE`, `SMALL EDGE` and `NO VALUE`
+  rather than hardcoded presentation logic.
+- Spread and Total must resolve opposing outcomes for the same line into one
+  preferred-side card instead of showing both sides separately.
+- Missing odds or market probability must produce an explicit unavailable/no
+  current market state without suppressing the model-preferred outcome.
+- Add bilingual tooltips for model probability, no-vig market probability,
+  edge and best odds, including the warning that positive edge does not
+  guarantee profit.
+- Preserve the existing Game Center probability, model-score, margin, Total,
+  model-explanation and technical-routing sections.
+- Keep Game Center focused on one matchup and all three model opinions, while
+  Betting Board remains the ranked, next-week cross-game value view.
+- Before implementation, audit the current DuckDB output tables and document
+  the source fields, preferred-side selection, status thresholds and missing
+  market fallback used by the cards.
 
 ### Product Analytics
 

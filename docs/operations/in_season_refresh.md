@@ -23,6 +23,33 @@ Download a new snapshot and consume Odds API credit only when intentionally requ
 python -m src.pipeline.run_in_season_refresh --online
 ```
 
+## Scheduled Production Run
+
+`.github/workflows/weekly-production-refresh.yml` runs the complete production
+orchestrator at these local times using the `Europe/Budapest` timezone:
+
+- Tuesday 08:00;
+- Thursday 15:00;
+- Sunday 15:00.
+
+It can also be started manually with `workflow_dispatch`. A fresh hosted runner
+first restores `operational.duckdb` from the latest private data Release, then
+restores the ignored schedule, player-directory, depth-chart, injury-report and
+completed-season snap-count sources required by the loaders. It runs modeling,
+downloads one new Moneyline/Spread/Total odds
+snapshot, rebuilds EV and simulation outputs, executes the regression suite and
+publishes a new atomic private Release.
+
+Required Actions secrets:
+
+- `ODDS_API_KEY`;
+- `NFL_ANALYTICS_DASHBOARD_PUBLISH_TOKEN` with Contents read/write access to
+  `fefemu/nfl-analytics-platform-data`.
+
+The first scheduled run requires a seeded latest Release containing both
+`dashboard.duckdb` and `operational.duckdb`. A failed run uploads its log as a
+short-lived Actions artifact and does not replace the previous latest Release.
+
 There is no implicit default mode. One of `--snapshot` or `--online` is required.
 
 ## Execution Order
@@ -48,7 +75,13 @@ Disconnect DBeaver and other DuckDB writers before running. The generated DuckDB
 - `analytics.forward_tip_clv`: positive-EV candidates with their latest later pregame comparison;
 - `analytics.refresh_run_history`: operational run audit.
 
-Only rows whose `commence_time` is later than `fetched_at` are archived. Historical OOF selections remain internal and are not mixed with the forward archive.
+Only rows whose `commence_time` is later than the odds fetch, prediction generation,
+betting-board generation and final archive/lock timestamp are archived. A stale
+pregame odds file processed after kickoff is therefore not eligible for the forward
+test. Reusing an archive identity is idempotent only when all locked payload values
+are identical; conflicting values fail the refresh instead of silently replacing or
+ignoring the original observation. Historical OOF selections remain internal and
+are not mixed with the forward archive.
 
 Run quality checks with:
 
