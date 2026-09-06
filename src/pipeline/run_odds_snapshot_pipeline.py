@@ -35,6 +35,7 @@ from src.betting.build_current_moneyline_value import build_current_moneyline_va
 from src.betting.build_current_spread_value import build_current_spread_value
 from src.betting.build_current_totals_value import build_current_totals_value
 from src.betting.build_current_betting_board import build_current_betting_board
+from src.modeling.train_logistic_baseline import DATABASE_FILE
 
 
 logging.basicConfig(
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 def run_odds_snapshot_pipeline(
     snapshot_file: Path,
+    database_file: Path = DATABASE_FILE,
 ) -> None:
     """Rebuild all odds layers from a local snapshot."""
 
@@ -55,35 +57,36 @@ def run_odds_snapshot_pipeline(
     logger.info("Step 1/9: Loading snapshot into DuckDB.")
     load_odds_snapshot_to_duckdb(
         snapshot_file=snapshot_file,
+        database_file=database_file,
     )
 
     logger.info("Step 2/9: Building processed odds data.")
-    build_processed_odds()
+    build_processed_odds(database_file=database_file)
 
     logger.info("Step 3/9: Building best available odds.")
-    build_best_odds()
+    build_best_odds(database_file=database_file)
 
     logger.info(
         "Step 4/9: Matching odds events to schedule games."
     )
-    build_odds_event_bridge()
+    build_odds_event_bridge(database_file=database_file)
 
     logger.info(
         "Step 5/9: Building current NFL market board."
     )
-    build_current_market_board()
+    build_current_market_board(database_file=database_file)
 
     logger.info("Step 6/9: Building Moneyline expected value.")
-    build_current_moneyline_value()
+    build_current_moneyline_value(database_file=database_file)
 
     logger.info("Step 7/9: Building Spread expected value.")
-    build_current_spread_value()
+    build_current_spread_value(database_file=database_file)
 
     logger.info("Step 8/9: Building Totals expected value.")
-    build_current_totals_value()
+    build_current_totals_value(database_file=database_file)
 
     logger.info("Step 9/9: Building combined betting board.")
-    build_current_betting_board()
+    build_current_betting_board(database_file=database_file)
 
     logger.info(
         "Offline odds snapshot pipeline completed successfully."

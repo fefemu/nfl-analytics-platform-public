@@ -14,6 +14,7 @@ Version:
 """
 
 import logging
+from pathlib import Path
 
 from src.ingestion.download_current_odds import (
     save_current_nfl_odds_snapshot,
@@ -35,6 +36,7 @@ from src.betting.build_current_moneyline_value import build_current_moneyline_va
 from src.betting.build_current_spread_value import build_current_spread_value
 from src.betting.build_current_totals_value import build_current_totals_value
 from src.betting.build_current_betting_board import build_current_betting_board
+from src.modeling.train_logistic_baseline import DATABASE_FILE
 
 
 logging.basicConfig(
@@ -45,7 +47,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_odds_pipeline() -> None:
+def run_odds_pipeline(database_file: Path = DATABASE_FILE) -> None:
     """Run the current NFL odds ingestion pipeline."""
 
     logger.info("Starting current NFL odds pipeline...")
@@ -56,35 +58,36 @@ def run_odds_pipeline() -> None:
     logger.info("Step 2/10: Loading odds snapshot into DuckDB.")
     load_odds_snapshot_to_duckdb(
         snapshot_file=snapshot_file,
+        database_file=database_file,
     )
 
     logger.info("Step 3/10: Building processed odds data.")
-    build_processed_odds()
+    build_processed_odds(database_file=database_file)
 
     logger.info("Step 4/10: Building best available odds.")
-    build_best_odds()
+    build_best_odds(database_file=database_file)
 
     logger.info(
         "Step 5/10: Matching odds events to schedule games."
     )
-    build_odds_event_bridge()
+    build_odds_event_bridge(database_file=database_file)
 
     logger.info(
         "Step 6/10: Building current NFL market board."
     )
-    build_current_market_board()
+    build_current_market_board(database_file=database_file)
 
     logger.info("Step 7/10: Building Moneyline expected value.")
-    build_current_moneyline_value()
+    build_current_moneyline_value(database_file=database_file)
 
     logger.info("Step 8/10: Building Spread expected value.")
-    build_current_spread_value()
+    build_current_spread_value(database_file=database_file)
 
     logger.info("Step 9/10: Building Totals expected value.")
-    build_current_totals_value()
+    build_current_totals_value(database_file=database_file)
 
     logger.info("Step 10/10: Building combined betting board.")
-    build_current_betting_board()
+    build_current_betting_board(database_file=database_file)
 
     logger.info(
         "Current NFL odds pipeline completed successfully."

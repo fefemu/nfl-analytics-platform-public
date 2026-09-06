@@ -1,7 +1,7 @@
 # In-Season Refresh Runbook
 
 **Status:** Operational first generation  
-**Last Updated:** 2026-08-14
+**Last Updated:** 2026-09-06
 
 ## Purpose
 
@@ -30,7 +30,11 @@ orchestrator at these local times using the `Europe/Budapest` timezone:
 
 - Tuesday 08:00;
 - Thursday 15:00;
-- Sunday 15:00.
+- Sunday 09:00.
+
+Each native GitHub schedule has redundant attempts at minutes 07, 22 and 37.
+GitHub schedule delivery can be delayed, so the Cloudflare dispatcher is the
+primary wall-clock trigger and the native schedule is a guarded fallback.
 
 It can also be started manually with `workflow_dispatch`. A fresh hosted runner
 first restores `operational.duckdb` from the latest private data Release, then

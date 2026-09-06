@@ -43,6 +43,10 @@ After deployment, use Cloudflare **Workers & Pages → the Worker → Triggers**
 confirm the `*/15 * * * *` Cron Trigger. Use **Observability → Logs** to verify
 dispatches. In GitHub Actions, externally triggered runs show the
 `repository_dispatch` event. A successful API request returns HTTP 204.
+Every scheduled execution logs `Odds API events lookup: HTTP <status>`. During
+a configured production window it also logs
+`GitHub repository_dispatch: HTTP <status>`. Non-success responses include the
+response body and rejected task name before the aggregate scheduled error.
 
 Kickoff dispatches appear under **Kickoff-near odds capture**. A comparison is
 marked closing/CLV only when its `kickoff_capture_*` fetch is 45–75 minutes before

@@ -11,7 +11,12 @@ from dotenv import load_dotenv
 
 from src.betting.build_forward_betting_archive import build_forward_betting_archive
 from src.deployment.build_dashboard_snapshot import DEFAULT_OUTPUT_FILE, build_dashboard_snapshot
-from src.deployment.publish_dashboard_release import publish_dashboard_release
+try:
+    from src.deployment.publish_dashboard_release import publish_dashboard_release
+except ModuleNotFoundError as error:
+    if error.name != "src.deployment.publish_dashboard_release":
+        raise
+    publish_dashboard_release = None
 from src.modeling.train_logistic_baseline import DATABASE_FILE, validate_database_file
 from src.pipeline.run_in_season_refresh import (
     create_refresh_run_id,
@@ -31,6 +36,10 @@ def run_kickoff_odds_capture(
     publish: bool = False,
 ) -> str:
     """Refresh only market layers, archive them and optionally publish validated state."""
+    if publish and publish_dashboard_release is None:
+        raise RuntimeError(
+            "Publishing is unavailable because the private release adapter is not installed."
+        )
     validate_database_file(database_file)
     started_at = datetime.now(timezone.utc)
     refresh_run_id = create_refresh_run_id(started_at).replace(
@@ -38,7 +47,7 @@ def run_kickoff_odds_capture(
     )
     record_refresh_start(database_file, refresh_run_id, "KICKOFF_ODDS_CAPTURE", None, started_at)
     try:
-        run_odds_pipeline()
+        run_odds_pipeline(database_file=database_file)
         archive_count = build_forward_betting_archive(refresh_run_id, database_file)
         record_refresh_completion(database_file, refresh_run_id, "SUCCESS", archive_count)
         build_dashboard_snapshot(source_file=database_file, output_file=output_file)

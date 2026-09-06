@@ -98,9 +98,12 @@ def run_in_season_refresh(
     try:
         run_modeling_pipeline(database_file=database_file)
         if snapshot_file is None:
-            run_odds_pipeline()
+            run_odds_pipeline(database_file=database_file)
         else:
-            run_odds_snapshot_pipeline(snapshot_file=snapshot_file)
+            run_odds_snapshot_pipeline(
+                snapshot_file=snapshot_file,
+                database_file=database_file,
+            )
         archive_count = build_forward_betting_archive(
             refresh_run_id=refresh_run_id,
             database_file=database_file,

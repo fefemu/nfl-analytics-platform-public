@@ -15,11 +15,11 @@ def test_offline_refresh_runs_in_order_and_records_success(monkeypatch, tmp_path
     snapshot.write_text("{}", encoding="utf-8")
     calls = []
     monkeypatch.setattr("src.pipeline.run_in_season_refresh.run_modeling_pipeline", lambda database_file: calls.append("modeling"))
-    monkeypatch.setattr("src.pipeline.run_in_season_refresh.run_odds_snapshot_pipeline", lambda snapshot_file: calls.append("offline_odds"))
+    monkeypatch.setattr("src.pipeline.run_in_season_refresh.run_odds_snapshot_pipeline", lambda snapshot_file, database_file: calls.append(("offline_odds", database_file)))
     monkeypatch.setattr("src.pipeline.run_in_season_refresh.build_forward_betting_archive", lambda refresh_run_id, database_file: calls.append("archive") or 12)
     monkeypatch.setattr("src.pipeline.run_in_season_refresh.build_forward_performance", lambda database_file: calls.append("settlement"))
     run_id = run_in_season_refresh(database, snapshot)
-    assert calls == ["modeling", "offline_odds", "archive", "settlement"]
+    assert calls == ["modeling", ("offline_odds", database), "archive", "settlement"]
     with duckdb.connect(str(database), read_only=True) as connection:
         row = connection.execute("SELECT status, refresh_mode, archived_market_row_count FROM analytics.refresh_run_history WHERE refresh_run_id=?", [run_id]).fetchone()
     assert row == ("SUCCESS", "OFFLINE_SNAPSHOT", 12)
@@ -30,11 +30,11 @@ def test_online_refresh_is_explicit_path(monkeypatch, tmp_path: Path):
     duckdb.connect(str(database)).close()
     calls = []
     monkeypatch.setattr("src.pipeline.run_in_season_refresh.run_modeling_pipeline", lambda database_file: calls.append("modeling"))
-    monkeypatch.setattr("src.pipeline.run_in_season_refresh.run_odds_pipeline", lambda: calls.append("online_odds"))
+    monkeypatch.setattr("src.pipeline.run_in_season_refresh.run_odds_pipeline", lambda database_file: calls.append(("online_odds", database_file)))
     monkeypatch.setattr("src.pipeline.run_in_season_refresh.build_forward_betting_archive", lambda refresh_run_id, database_file: 1)
     monkeypatch.setattr("src.pipeline.run_in_season_refresh.build_forward_performance", lambda database_file: None)
     run_in_season_refresh(database)
-    assert calls == ["modeling", "online_odds"]
+    assert calls == ["modeling", ("online_odds", database)]
 
 
 def test_failed_refresh_is_audited(monkeypatch, tmp_path: Path):

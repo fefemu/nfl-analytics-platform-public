@@ -3,7 +3,7 @@
 **Project:** NFL Analytics Platform
 **Version:** 0.1.0
 **Status:** Active
-**Last Updated:** 2026-09-04
+**Last Updated:** 2026-09-06
 
 ---
 
@@ -55,7 +55,7 @@ The current production system provides:
 - algebraically consistent model-implied home and away scores;
 - external-nfelo initialized dynamic and frozen season simulations.
 
-The current development area is automated in-season refresh. Prospective snapshot-based CLV tracking and Streamlit publication follow afterward.
+The automated in-season refresh, prospective market tracking, kickoff-near odds capture and gated Streamlit Live Results view are implemented. The current release gate focuses on operational verification before the 2026 regular-season opener.
 
 ---
 
@@ -76,7 +76,7 @@ The current development area is automated in-season refresh. Prospective snapsho
 | M11 | Spread and totals models | Completed |
 | M12 | Betting edge and expected-value engine | Completed |
 | M13 | Automated in-season refresh workflows | Completed for first generation |
-| M14 | Streamlit public application | Planned |
+| M14 | Streamlit public application | Completed |
 | M15 | Version 1.0 documentation and release | Planned |
 
 ---
@@ -100,7 +100,7 @@ The current development area is automated in-season refresh. Prospective snapsho
 | P3b | Add a dedicated event-timed odds snapshot near `kickoff - 60 minutes`, then promote the comparison to prospective CLV | Completed 2026-09-05 | Completed; deployment requires Worker `ODDS_API_KEY` secret |
 | P4 | Build the forward settlement and performance layer for locked 2026 observations: W/L/push, units, ROI, win rate, average odds, Brier, Log Loss and drawdown | Completed 2026-09-06 | Implemented before Week 1; live validation follows after completed games exist |
 | P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | Completed 2026-09-06 | Completed; live values populate after settled games exist |
-| P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | 1.5–2.5 person-days | Release gate |
+| P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | In progress 2026-09-06 | Automated and offline gates pass; live dispatcher verification is scheduled for 2026-09-08 |
 | P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
 
 Estimated remaining total after P0–P2: **10.5–17.5 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. The Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.

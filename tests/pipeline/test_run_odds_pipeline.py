@@ -15,6 +15,7 @@ def test_run_odds_pipeline_calls_steps_in_order(
 
     calls: list[str] = []
     snapshot_file = tmp_path / "odds_snapshot.json"
+    database_file = tmp_path / "isolated.duckdb"
 
     def fake_download() -> Path:
         calls.append("download")
@@ -22,31 +23,34 @@ def test_run_odds_pipeline_calls_steps_in_order(
 
     def fake_raw_load(
         snapshot_file: Path,
+        database_file: Path,
     ) -> None:
+        assert database_file == tmp_path / "isolated.duckdb"
         calls.append("raw")
 
-    def fake_processed_build() -> None:
+    def fake_processed_build(*, database_file: Path) -> None:
+        assert database_file == tmp_path / "isolated.duckdb"
         calls.append("processed")
 
-    def fake_best_odds_build() -> None:
+    def fake_best_odds_build(*, database_file: Path) -> None:
         calls.append("best")
 
-    def fake_event_bridge_build() -> None:
+    def fake_event_bridge_build(*, database_file: Path) -> None:
         calls.append("bridge")
 
-    def fake_market_board_build() -> None:
+    def fake_market_board_build(*, database_file: Path) -> None:
         calls.append("market_board")
 
-    def fake_moneyline() -> None:
+    def fake_moneyline(*, database_file: Path) -> None:
         calls.append("moneyline")
 
-    def fake_spread() -> None:
+    def fake_spread(*, database_file: Path) -> None:
         calls.append("spread")
 
-    def fake_totals() -> None:
+    def fake_totals(*, database_file: Path) -> None:
         calls.append("totals")
 
-    def fake_board() -> None:
+    def fake_board(*, database_file: Path) -> None:
         calls.append("board")
 
     monkeypatch.setattr(
@@ -84,7 +88,7 @@ def test_run_odds_pipeline_calls_steps_in_order(
     monkeypatch.setattr("src.pipeline.run_odds_pipeline.build_current_totals_value", fake_totals)
     monkeypatch.setattr("src.pipeline.run_odds_pipeline.build_current_betting_board", fake_board)
 
-    run_odds_pipeline()
+    run_odds_pipeline(database_file=database_file)
 
     assert calls == [
         "download",
@@ -165,31 +169,32 @@ def test_run_odds_pipeline_stops_and_propagates_failure(
 
     def fake_raw_load(
         snapshot_file: Path,
+        database_file: Path,
     ) -> None:
         record_step("raw")
 
-    def fake_processed_build() -> None:
+    def fake_processed_build(*, database_file: Path) -> None:
         record_step("processed")
 
-    def fake_best_odds_build() -> None:
+    def fake_best_odds_build(*, database_file: Path) -> None:
         record_step("best")
 
-    def fake_event_bridge_build() -> None:
+    def fake_event_bridge_build(*, database_file: Path) -> None:
         record_step("bridge")
 
-    def fake_market_board_build() -> None:
+    def fake_market_board_build(*, database_file: Path) -> None:
         record_step("market_board")
 
-    def fake_moneyline() -> None:
+    def fake_moneyline(*, database_file: Path) -> None:
         record_step("moneyline")
 
-    def fake_spread() -> None:
+    def fake_spread(*, database_file: Path) -> None:
         record_step("spread")
 
-    def fake_totals() -> None:
+    def fake_totals(*, database_file: Path) -> None:
         record_step("totals")
 
-    def fake_board() -> None:
+    def fake_board(*, database_file: Path) -> None:
         record_step("board")
 
     monkeypatch.setattr(
