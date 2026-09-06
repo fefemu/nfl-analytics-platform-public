@@ -1,5 +1,6 @@
 """Premium public shell for the NFL Analytics Platform."""
 
+import pandas as pd
 import streamlit as st
 
 from src.dashboard.analytics import render_analytics
@@ -46,7 +47,18 @@ inject_styles(APP_CSS)
 
 repository = DashboardRepository()
 health = repository.health()
-forward_settlement, forward_performance_summary = repository.load_forward_performance()
+# Streamlit Cloud can rerun this entry point before reloading an already imported
+# repository module during a deployment. Keep rollout compatible with that brief
+# mixed-version state instead of crashing the whole application.
+if hasattr(repository, "load_forward_performance"):
+    forward_settlement, forward_performance_summary = repository.load_forward_performance()
+else:
+    forward_tables = {"forward_tip_settlement", "forward_performance_summary"}
+    if forward_tables.issubset(set(health.available_tables)):
+        forward_settlement = repository.read_table("forward_tip_settlement")
+        forward_performance_summary = repository.read_table("forward_performance_summary")
+    else:
+        forward_settlement, forward_performance_summary = pd.DataFrame(), pd.DataFrame()
 available_pages = dict(PAGES)
 if not has_settled_results(forward_settlement):
     available_pages.pop("PERFORMANCE")
