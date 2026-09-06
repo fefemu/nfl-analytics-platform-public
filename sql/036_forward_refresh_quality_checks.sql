@@ -35,8 +35,8 @@ WITH quality_checks AS (
     SELECT 'invalid_market_movement_label', COUNT(*)
     FROM analytics.forward_tip_market_movement
     WHERE comparison_type <> 'LATEST_PRE_KICKOFF'
-       OR is_closing_snapshot
-       OR is_clv
+       OR is_closing_snapshot <> is_clv
+       OR (is_closing_snapshot AND latest_minutes_before_kickoff NOT BETWEEN 45 AND 75)
        OR market_movement_direction NOT IN (
            'POSITIVE', 'NEGATIVE', 'UNCHANGED', 'NO_LATER_SNAPSHOT'
        )

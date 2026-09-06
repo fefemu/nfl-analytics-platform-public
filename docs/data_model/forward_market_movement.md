@@ -7,7 +7,7 @@
 
 `analytics.forward_tip_market_movement` compares the first archived positive-EV observation for a game, market and outcome with the latest later market snapshot available before kickoff.
 
-This is **Market Movement / Latest Pre-Kickoff Value**, not Closing Line Value. The current Tuesday, Thursday and Sunday refreshes are not guaranteed to capture the closing market. Every row therefore has `is_closing_snapshot = false` and `is_clv = false`.
+This is **Market Movement / Latest Pre-Kickoff Value**, not automatically Closing Line Value. Tuesday, Thursday and Sunday refreshes are not guaranteed to capture the closing market. Only a dedicated `kickoff_capture_*` observation fetched 45–75 minutes before kickoff is marked `is_closing_snapshot = true` and `is_clv = true`.
 
 ## Entry and comparison rules
 
@@ -30,4 +30,4 @@ Line movement determines the direction when the line changed. If the line is unc
 
 ## Future promotion to CLV
 
-P3b will add a lightweight market capture near `kickoff - 60 minutes`. Only observations meeting a documented kickoff-distance tolerance may later be labelled closing snapshots and used for prospective CLV.
+P3b uses the Cloudflare scheduler's free upcoming-events lookup to dispatch one lightweight full-slate odds capture per kickoff window. The target is `kickoff - 60 minutes`; the accepted tolerance is 45–75 minutes. The capture reruns market layers and publication only, never the prediction models or external football-data sources.

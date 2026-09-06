@@ -209,8 +209,17 @@ def persist_forward_archive(
             END AS market_movement_direction,
             later.fetched_at IS NOT NULL AS has_latest_pregame_comparison,
             'LATEST_PRE_KICKOFF' AS comparison_type,
-            FALSE AS is_closing_snapshot,
-            FALSE AS is_clv
+            60 AS capture_target_minutes_before_kickoff,
+            COALESCE(
+                later.refresh_run_id LIKE 'kickoff_capture_%'
+                AND DATE_DIFF('minute', later.fetched_at, entry.commence_time) BETWEEN 45 AND 75,
+                FALSE
+            ) AS is_closing_snapshot,
+            COALESCE(
+                later.refresh_run_id LIKE 'kickoff_capture_%'
+                AND DATE_DIFF('minute', later.fetched_at, entry.commence_time) BETWEEN 45 AND 75,
+                FALSE
+            ) AS is_clv
         FROM entries AS entry
         LEFT JOIN LATERAL (
             SELECT candidate.*
@@ -252,8 +261,8 @@ def validate_forward_archive(connection: duckdb.DuckDBPyConnection) -> None:
         f"""
         SELECT COUNT(*) FROM {MARKET_MOVEMENT_VIEW}
         WHERE comparison_type <> 'LATEST_PRE_KICKOFF'
-           OR is_closing_snapshot
-           OR is_clv
+           OR is_closing_snapshot <> is_clv
+           OR (is_closing_snapshot AND latest_minutes_before_kickoff NOT BETWEEN 45 AND 75)
            OR market_movement_direction NOT IN (
                'POSITIVE', 'NEGATIVE', 'UNCHANGED', 'NO_LATER_SNAPSHOT'
            )

@@ -1,0 +1,32 @@
+name: Kickoff-near odds capture
+
+on:
+  repository_dispatch:
+    types: [kickoff-odds-capture]
+  workflow_dispatch:
+
+concurrency:
+  group: nfl-production-refresh
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+      NFL_ANALYTICS_DASHBOARD_PUBLISH_REPOSITORY: fefemu/nfl-analytics-platform-data
+      NFL_ANALYTICS_DASHBOARD_PUBLISH_TOKEN: ${{ secrets.NFL_ANALYTICS_DASHBOARD_PUBLISH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Restore operational database
+        run: python -m src.deployment.operational_database
+      - name: Capture and publish kickoff-near odds
+        run: python -m src.pipeline.run_kickoff_odds_capture --publish

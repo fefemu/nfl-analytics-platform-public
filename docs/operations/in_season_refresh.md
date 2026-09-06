@@ -83,6 +83,12 @@ are identical; conflicting values fail the refresh instead of silently replacing
 ignoring the original observation. Historical OOF selections remain internal and
 are not mixed with the forward archive.
 
+Kickoff-near observations use the separate `kickoff-odds-capture.yml` workflow.
+It restores the latest operational database, rebuilds only odds and market layers,
+archives the snapshot and republishes operational/dashboard state. Captures inside
+the 45–75 minute tolerance may be used as prospective CLV; ordinary weekly
+snapshots remain latest pre-kickoff market movement.
+
 Run quality checks with:
 
 ```powershell

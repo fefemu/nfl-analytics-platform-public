@@ -191,6 +191,25 @@ def test_forward_quality_checks_accept_market_movement_schema():
     assert checks["status"].eq("PASS").all()
 
 
+def test_kickoff_capture_within_tolerance_is_promoted_to_clv():
+    first = prepare_forward_archive_rows(
+        board(), "run1", datetime(2026, 9, 1, 12, 1, tzinfo=timezone.utc)
+    )
+    closing = prepare_forward_archive_rows(
+        board("s2", "2026-09-10T19:00:00Z", 1.9, False),
+        "kickoff_capture_20260910T190000Z_test",
+        datetime(2026, 9, 10, 19, 1, tzinfo=timezone.utc),
+    )
+    with duckdb.connect(":memory:") as connection:
+        persist_forward_archive(connection, first)
+        persist_forward_archive(connection, closing)
+        result = connection.execute(
+            """SELECT latest_minutes_before_kickoff, is_closing_snapshot, is_clv
+               FROM analytics.forward_tip_market_movement"""
+        ).fetchone()
+    assert result == (60, True, True)
+
+
 def test_same_archive_identity_cannot_silently_change_locked_values():
     archived_at = datetime(2026, 9, 1, 12, 1, tzinfo=timezone.utc)
     first = prepare_forward_archive_rows(board(), "run1", archived_at)

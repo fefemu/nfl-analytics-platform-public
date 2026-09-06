@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nfl-production-refresh-dispatcher",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "observability": {
+    "enabled": true
+  },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "vars": {
+    "GITHUB_OWNER": "fefemu",
+    "GITHUB_REPOSITORY": "nfl-analytics-platform"
+  },
+  "secrets": {
+    "required": ["GITHUB_TOKEN", "ODDS_API_KEY"]
+  }
+}
