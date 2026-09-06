@@ -211,6 +211,18 @@ class DashboardRepository:
             return pd.DataFrame()
         return self.read_table("current_betting_board")
 
+    def load_forward_performance(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Load prepared live-forward settlement and summary products."""
+
+        available = set(self.health().available_tables)
+        required = {"forward_tip_settlement", "forward_performance_summary"}
+        if not required.issubset(available):
+            return pd.DataFrame(), pd.DataFrame()
+        return (
+            self.read_table("forward_tip_settlement"),
+            self.read_table("forward_performance_summary"),
+        )
+
     def load_current_team_rosters(self) -> pd.DataFrame:
         """Load the latest timestamped depth chart with available player context."""
 

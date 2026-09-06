@@ -17,7 +17,9 @@ scores. Spread and Total rows are not included in probability scoring.
 `analytics.forward_performance_summary` provides season, season/market, week
 and week/market aggregates: tracked and settled counts, W/L/push, win rate,
 average odds, units, ROI, maximum drawdown, Moneyline Brier/Log Loss and
-qualifying prospective-CLV coverage. These are live-forward results only and
+qualifying prospective-CLV coverage. Each aggregate is prepared for all tracked
+rows, settled rows only and CLV-eligible rows so the UI never recalculates
+performance metrics. These are live-forward results only and
 must not be combined with historical backtests.
 
 The first live samples are inherently small and are not evidence of sustainable

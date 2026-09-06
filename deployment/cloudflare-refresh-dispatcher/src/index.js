@@ -40,9 +40,11 @@ export async function dispatchGitHub(env, scheduledAt, fetchImpl = fetch, eventT
   for (const name of ["GITHUB_TOKEN", "GITHUB_OWNER", "GITHUB_REPOSITORY"]) {
     if (!env[name]) throw new Error(`Missing required binding: ${name}`);
   }
-  const response = await fetchImpl(
-    `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPOSITORY}/dispatches`,
-    {
+  let response;
+  try {
+    response = await fetchImpl(
+      `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPOSITORY}/dispatches`,
+      {
       method: "POST",
       headers: {
         Accept: "application/vnd.github+json",
@@ -60,11 +62,17 @@ export async function dispatchGitHub(env, scheduledAt, fetchImpl = fetch, eventT
           ...extraPayload,
         },
       }),
-    },
-  );
+      },
+    );
+  } catch (error) {
+    console.error(`GitHub repository_dispatch: request failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
+  console.log(`GitHub repository_dispatch: HTTP ${response.status}`);
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`GitHub repository dispatch failed (${response.status}): ${detail}`);
+    console.error(`GitHub repository_dispatch response body: ${detail || "<empty>"}`);
+    throw new Error(`GitHub repository_dispatch failed (HTTP ${response.status}): ${detail}`);
   }
 }
 
@@ -73,8 +81,19 @@ export async function upcomingKickoffWindow(env, scheduledAt, fetchImpl = fetch)
   const url = new URL(NFL_EVENTS_URL);
   url.searchParams.set("apiKey", env.ODDS_API_KEY);
   url.searchParams.set("dateFormat", "iso");
-  const response = await fetchImpl(url.toString(), { headers: { "User-Agent": "NFL-Analytics-Kickoff-Scheduler/1.0" } });
-  if (!response.ok) throw new Error(`Odds API events lookup failed (${response.status}): ${await response.text()}`);
+  let response;
+  try {
+    response = await fetchImpl(url.toString(), { headers: { "User-Agent": "NFL-Analytics-Kickoff-Scheduler/1.0" } });
+  } catch (error) {
+    console.error(`Odds API events lookup: request failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
+  console.log(`Odds API events lookup: HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.text();
+    console.error(`Odds API events lookup response body: ${detail || "<empty>"}`);
+    throw new Error(`Odds API events lookup failed (HTTP ${response.status}): ${detail}`);
+  }
   const events = await response.json();
   const due = events.filter((event) => {
     const kickoff = new Date(event.commence_time);
@@ -89,21 +108,41 @@ export async function upcomingKickoffWindow(env, scheduledAt, fetchImpl = fetch)
   };
 }
 
-export default {
-  async scheduled(controller, env, ctx) {
-    const scheduledAt = new Date(controller.scheduledTime);
-    const tasks = [];
-    if (shouldDispatch(scheduledAt)) {
-      tasks.push(dispatchGitHub(env, scheduledAt));
-    }
-    tasks.push((async () => {
-      const kickoff = await upcomingKickoffWindow(env, scheduledAt);
+export async function runScheduledTasks(env, scheduledAt, fetchImpl = fetch) {
+  const tasks = [];
+  if (shouldDispatch(scheduledAt)) {
+    tasks.push({
+      name: "production refresh dispatch",
+      promise: dispatchGitHub(env, scheduledAt, fetchImpl),
+    });
+  }
+  tasks.push({
+    name: "kickoff odds lookup",
+    promise: (async () => {
+      const kickoff = await upcomingKickoffWindow(env, scheduledAt, fetchImpl);
       if (kickoff) {
-        await dispatchGitHub(env, scheduledAt, fetch, KICKOFF_EVENT_TYPE, kickoff);
+        await dispatchGitHub(env, scheduledAt, fetchImpl, KICKOFF_EVENT_TYPE, kickoff);
       } else {
         console.log(`No kickoff capture window at ${scheduledAt.toISOString()}.`);
       }
-    })());
-    ctx.waitUntil(Promise.all(tasks));
+    })(),
+  });
+
+  const results = await Promise.allSettled(tasks.map(({ promise }) => promise));
+  const failures = results.flatMap((result, index) => {
+    if (result.status !== "rejected") return [];
+    const reason = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+    console.error(`Scheduled task rejected: ${tasks[index].name}: ${reason.stack || reason.message}`);
+    return [new Error(`${tasks[index].name} failed: ${reason.message}`, { cause: reason })];
+  });
+  if (failures.length) {
+    throw new AggregateError(failures, "One or more scheduled dispatcher tasks failed.");
+  }
+}
+
+export default {
+  async scheduled(controller, env, ctx) {
+    const scheduledAt = new Date(controller.scheduledTime);
+    ctx.waitUntil(runScheduledTasks(env, scheduledAt));
   },
 };

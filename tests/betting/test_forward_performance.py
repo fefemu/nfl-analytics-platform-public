@@ -69,7 +69,7 @@ def test_moneyline_probability_scores_use_locked_selection_probability():
 def test_summary_reports_roi_drawdown_and_missing_market_scores():
     ledger = create_forward_settlement(entries(), schedule())
     summary = create_forward_performance_summary(ledger)
-    overall = summary.loc[(summary["selection_scope"] == "SEASON") & (summary["market_key"] == "ALL")].iloc[0]
+    overall = summary.loc[(summary["selection_scope"] == "SEASON") & (summary["market_key"] == "ALL") & (summary["sample_scope"] == "ALL_TRACKED")].iloc[0]
     assert overall["tracked_count"] == 4
     assert overall["settled_count"] == 3
     assert overall["pending_count"] == 1
@@ -77,8 +77,11 @@ def test_summary_reports_roi_drawdown_and_missing_market_scores():
     assert overall["roi_percent"] == pytest.approx(0.0)
     assert overall["maximum_drawdown_units"] == pytest.approx(1.0)
     assert overall["average_price_movement_probability_pp"] == pytest.approx(2.0)
-    spread = summary.loc[(summary["selection_scope"] == "SEASON_MARKET") & (summary["market_key"] == "spreads")].iloc[0]
+    spread = summary.loc[(summary["selection_scope"] == "SEASON_MARKET") & (summary["market_key"] == "spreads") & (summary["sample_scope"] == "ALL_TRACKED")].iloc[0]
     assert pd.isna(spread["brier_score"])
+    settled = summary.loc[(summary["selection_scope"] == "SEASON") & (summary["market_key"] == "ALL") & (summary["sample_scope"] == "SETTLED_ONLY")].iloc[0]
+    assert settled["tracked_count"] == 3
+    assert settled["pending_count"] == 0
 
 
 def test_persistence_validation_rejects_duplicate_or_invalid_arithmetic():
@@ -87,9 +90,29 @@ def test_persistence_validation_rejects_duplicate_or_invalid_arithmetic():
     with duckdb.connect(":memory:") as connection:
         persist_forward_performance(connection, ledger, summary)
         validate_forward_performance(connection)
-        connection.execute("UPDATE analytics.forward_tip_settlement SET profit_units=99 WHERE result='WIN'")
+        connection.execute('UPDATE analytics.forward_tip_settlement SET profit_units=99 WHERE "result"=\'WIN\'')
         with pytest.raises(RuntimeError, match="validation failed"):
             validate_forward_performance(connection)
+
+
+def test_all_pending_results_are_persisted_as_varchar_and_validate():
+    """An all-null preseason result column must not be inferred as INTEGER."""
+    pending_schedule = schedule().assign(
+        home_score=None,
+        away_score=None,
+        is_completed=False,
+    )
+    ledger = create_forward_settlement(entries(), pending_schedule)
+    assert ledger["result"].isna().all()
+    summary = create_forward_performance_summary(ledger)
+    with duckdb.connect(":memory:") as connection:
+        persist_forward_performance(connection, ledger, summary)
+        assert connection.execute(
+            "SELECT data_type FROM information_schema.columns "
+            "WHERE table_schema='analytics' AND table_name='forward_tip_settlement' "
+            "AND column_name='result'"
+        ).fetchone()[0] == "VARCHAR"
+        validate_forward_performance(connection)
 
 
 def test_forward_performance_quality_sql_accepts_valid_tables():

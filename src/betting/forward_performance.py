@@ -24,7 +24,7 @@ SETTLEMENT_COLUMNS = (
     "is_clv", "market_movement_direction",
 )
 SUMMARY_COLUMNS = (
-    "season", "week", "market_key", "selection_scope", "tracked_count",
+    "season", "week", "market_key", "selection_scope", "sample_scope", "tracked_count",
     "settled_count", "pending_count", "win_count", "loss_count", "push_count",
     "win_rate", "average_decimal_odds", "total_profit_units", "roi_percent",
     "maximum_drawdown_units", "brier_score", "log_loss", "clv_count",
@@ -137,14 +137,22 @@ def create_forward_performance_summary(ledger: pd.DataFrame) -> pd.DataFrame:
             for market, market_rows in week_rows.groupby("market_key", sort=True):
                 scopes.append((int(season), int(week), str(market), "WEEK_MARKET", market_rows))
     summaries: list[dict[str, object]] = []
+    scoped_groups = []
     for season, week, market, scope, group in scopes:
+        scoped_groups.extend((
+            (season, week, market, scope, "ALL_TRACKED", group),
+            (season, week, market, scope, "SETTLED_ONLY", group.loc[group["settlement_status"].eq("SETTLED")]),
+            (season, week, market, scope, "CLV_ELIGIBLE", group.loc[group["is_clv"]]),
+        ))
+    for season, week, market, scope, sample_scope, group in scoped_groups:
         settled = group.loc[group["settlement_status"].eq("SETTLED")]
         decisions = settled.loc[settled["result"].isin(["WIN", "LOSS"])]
         scored = settled.loc[settled["is_probability_score_eligible"]]
         clv = group.loc[group["is_clv"]]
         summaries.append({
             "season": season, "week": week, "market_key": market,
-            "selection_scope": scope, "tracked_count": len(group),
+            "selection_scope": scope, "sample_scope": sample_scope,
+            "tracked_count": len(group),
             "settled_count": len(settled), "pending_count": len(group) - len(settled),
             "win_count": int(settled["result"].eq("WIN").sum()),
             "loss_count": int(settled["result"].eq("LOSS").sum()),
@@ -175,7 +183,11 @@ def persist_forward_performance(
     connection.register("_forward_settlement", ledger)
     connection.register("_forward_summary", summary)
     try:
-        connection.execute(f"CREATE OR REPLACE TABLE {SETTLEMENT_TABLE} AS SELECT * FROM _forward_settlement")
+        connection.execute(f"""
+            CREATE OR REPLACE TABLE {SETTLEMENT_TABLE} AS
+            SELECT * REPLACE (CAST("result" AS VARCHAR) AS "result")
+            FROM _forward_settlement
+        """)
         connection.execute(f"CREATE OR REPLACE TABLE {SUMMARY_TABLE} AS SELECT * FROM _forward_summary")
     finally:
         connection.unregister("_forward_settlement")
@@ -187,12 +199,12 @@ def validate_forward_performance(connection: duckdb.DuckDBPyConnection) -> None:
     invalid = connection.execute(f"""
         SELECT COUNT(*) FROM {SETTLEMENT_TABLE}
         WHERE settlement_status NOT IN ('PENDING', 'SETTLED')
-           OR (settlement_status = 'PENDING' AND (result IS NOT NULL OR profit_units IS NOT NULL))
-           OR (settlement_status = 'SETTLED' AND result NOT IN ('WIN', 'LOSS', 'PUSH'))
-           OR (result = 'LOSS' AND profit_units <> -1.0)
-           OR (result = 'PUSH' AND profit_units <> 0.0)
-           OR (result = 'WIN' AND ABS(profit_units - (entry_decimal_odds - 1.0)) > 0.000001)
-           OR (is_probability_score_eligible AND (market_key <> 'h2h' OR result = 'PUSH'))
+           OR (settlement_status = 'PENDING' AND ("result" IS NOT NULL OR profit_units IS NOT NULL))
+           OR (settlement_status = 'SETTLED' AND "result" NOT IN ('WIN', 'LOSS', 'PUSH'))
+           OR ("result" = 'LOSS' AND profit_units <> -1.0)
+           OR ("result" = 'PUSH' AND profit_units <> 0.0)
+           OR ("result" = 'WIN' AND ABS(profit_units - (entry_decimal_odds - 1.0)) > 0.000001)
+           OR (is_probability_score_eligible AND (market_key <> 'h2h' OR "result" = 'PUSH'))
            OR (NOT is_probability_score_eligible AND (brier_loss IS NOT NULL OR log_loss IS NOT NULL))
     """).fetchone()[0]
     duplicates = connection.execute(f"""

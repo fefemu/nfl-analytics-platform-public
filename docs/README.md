@@ -311,6 +311,8 @@ It explicitly distinguishes the current tracking output from kickoff-near CLV.
 
 Documents final-result settlement of immutable 2026 entry observations, flat-stake
 units and ROI, drawdown, Moneyline Brier/Log Loss, and CLV coverage summaries.
+The bilingual Live Results page exposes these prepared products with season, week,
+market and sample-scope filters and an explicit small-sample warning.
 
 ### Injury, Depth Chart and Player Usage
 

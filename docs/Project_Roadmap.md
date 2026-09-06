@@ -99,7 +99,7 @@ The current development area is automated in-season refresh. Prospective snapsho
 | P3a | Build reproducible Market Movement / Latest Pre-Kickoff Value from the existing Tuesday, Thursday and Sunday snapshots | Completed 2026-09-05 | Completed |
 | P3b | Add a dedicated event-timed odds snapshot near `kickoff - 60 minutes`, then promote the comparison to prospective CLV | Completed 2026-09-05 | Completed; deployment requires Worker `ODDS_API_KEY` secret |
 | P4 | Build the forward settlement and performance layer for locked 2026 observations: W/L/push, units, ROI, win rate, average odds, Brier, Log Loss and drawdown | Completed 2026-09-06 | Implemented before Week 1; live validation follows after completed games exist |
-| P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | 2–3 person-days | After the performance layer |
+| P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | Completed 2026-09-06 | Completed; live values populate after settled games exist |
 | P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | 1.5–2.5 person-days | Release gate |
 | P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
 

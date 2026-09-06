@@ -125,6 +125,26 @@ def test_season_simulator_loads_optional_benchmark(monkeypatch, tmp_path: Path) 
     assert benchmark.iloc[0]["team"] == "KC"
 
 
+def test_forward_performance_requires_both_prepared_tables(monkeypatch, tmp_path: Path) -> None:
+    repository = DashboardRepository(tmp_path / "unused.duckdb")
+    health = DashboardHealth(
+        True,
+        ("forward_tip_settlement", "forward_performance_summary"),
+        (), "SUCCESS", None,
+    )
+    frames = {
+        "forward_tip_settlement": pd.DataFrame({"game_id": ["g"]}),
+        "forward_performance_summary": pd.DataFrame({"season": [2026]}),
+    }
+    monkeypatch.setattr(repository, "health", lambda: health)
+    monkeypatch.setattr(repository, "read_table", lambda table, *args: frames[table])
+
+    settlement, summary = repository.load_forward_performance()
+
+    assert settlement.iloc[0]["game_id"] == "g"
+    assert summary.iloc[0]["season"] == 2026
+
+
 def test_data_science_lab_loads_aggregated_impact_summary(tmp_path: Path) -> None:
     database = tmp_path / "dashboard.duckdb"
     with duckdb.connect(str(database)) as connection:

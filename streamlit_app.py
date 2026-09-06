@@ -13,6 +13,7 @@ from src.dashboard.components import (
 from src.dashboard.i18n import Language, tr
 from src.dashboard.repository import DashboardRepository
 from src.dashboard.pages.betting import render_betting_board
+from src.dashboard.pages.forward_performance import has_settled_results, render_forward_performance
 from src.dashboard.pages.teams import render_teams
 from src.dashboard.pages.about import render_about
 from src.dashboard.pages.data_science_lab import render_data_science_lab
@@ -27,6 +28,7 @@ PAGES = {
     "OVERVIEW": ("⌂", "nav_overview", "subtitle_overview"),
     "GAMES": ("◫", "nav_games", "subtitle_games"),
     "BETTING": ("▦", "nav_betting", "subtitle_betting"),
+    "PERFORMANCE": ("↗", "nav_performance", "subtitle_performance"),
     "TEAMS": ("♟", "nav_teams", "subtitle_teams"),
     "SIMULATOR": ("⌁", "nav_simulator", "subtitle_simulator"),
     "LAB": ("⚗", "nav_lab", "subtitle_lab"),
@@ -44,11 +46,15 @@ inject_styles(APP_CSS)
 
 repository = DashboardRepository()
 health = repository.health()
+forward_settlement, forward_performance_summary = repository.load_forward_performance()
+available_pages = dict(PAGES)
+if not has_settled_results(forward_settlement):
+    available_pages.pop("PERFORMANCE")
 
 query_page = st.query_params.get("page")
 query_game_id = st.query_params.get("game_id")
 query_language = st.query_params.get("language")
-if query_page in PAGES and "dashboard_page" not in st.session_state:
+if query_page in available_pages and "dashboard_page" not in st.session_state:
     st.session_state["dashboard_page"] = query_page
 if query_game_id:
     st.session_state["dashboard_page"] = "GAMES"
@@ -56,6 +62,11 @@ if query_game_id:
     del st.query_params["game_id"]
 if query_language in ("EN", "HU") and "dashboard_language" not in st.session_state:
     st.session_state["dashboard_language"] = query_language
+if st.session_state.get("dashboard_page", "OVERVIEW") not in available_pages:
+    st.session_state["dashboard_page"] = "OVERVIEW"
+for stored_selector in ("dashboard_page_selector_EN", "dashboard_page_selector_HU"):
+    if st.session_state.get(stored_selector, "OVERVIEW") not in available_pages:
+        st.session_state[stored_selector] = "OVERVIEW"
 
 
 def _sync_navigation_query() -> None:
@@ -88,8 +99,8 @@ with st.sidebar:
         )
     selected = st.radio(
         "Navigation",
-        tuple(PAGES),
-        format_func=lambda key: f"{PAGES[key][0]}  {tr(language, PAGES[key][1])}",
+        tuple(available_pages),
+        format_func=lambda key: f"{available_pages[key][0]}  {tr(language, available_pages[key][1])}",
         key=selector_key,
         on_change=_select_dashboard_page,
         args=(selector_key,),
@@ -137,6 +148,8 @@ elif page_key == "GAMES":
     )
 elif page_key == "BETTING":
     render_betting_board(repository.load_current_betting_board(), language)
+elif page_key == "PERFORMANCE":
+    render_forward_performance(forward_settlement, forward_performance_summary, language)
 elif page_key == "TEAMS":
     render_teams(
         repository.load_current_team_rosters(),

@@ -25,6 +25,7 @@ def test_common_hungarian_labels_do_not_mix_english_prose() -> None:
     assert tr("HU", "last_refresh") == "Utolsó sikeres frissítés"
     assert tr("HU", "market_comparison") == "Piaci összehasonlítás"
     assert tr("HU", "simulations") == "Szimulációk"
+    assert tr("HU", "nav_performance") == "Élő eredmények"
 
 
 def test_missing_translation_is_rejected() -> None:
