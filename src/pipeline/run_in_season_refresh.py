@@ -9,6 +9,7 @@ from uuid import uuid4
 import duckdb
 
 from src.betting.build_forward_betting_archive import build_forward_betting_archive
+from src.betting.build_forward_performance import build_forward_performance
 from src.modeling.train_logistic_baseline import DATABASE_FILE, validate_database_file
 from src.pipeline.run_modeling_pipeline import run_modeling_pipeline
 from src.pipeline.run_odds_pipeline import run_odds_pipeline
@@ -104,6 +105,7 @@ def run_in_season_refresh(
             refresh_run_id=refresh_run_id,
             database_file=database_file,
         )
+        build_forward_performance(database_file=database_file)
         record_refresh_completion(database_file, refresh_run_id, "SUCCESS", archive_count)
     except Exception as error:
         record_refresh_completion(database_file, refresh_run_id, "FAILED", error_message=str(error)[:2000])

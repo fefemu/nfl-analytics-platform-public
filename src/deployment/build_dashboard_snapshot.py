@@ -49,6 +49,8 @@ DASHBOARD_TABLES = (
     SnapshotTable("analytics", "model_blend_scorecard"),
     SnapshotTable("analytics", "game_modeling_dataset"),
     SnapshotTable("analytics", "refresh_run_history", required=False),
+    SnapshotTable("analytics", "forward_tip_settlement", required=False),
+    SnapshotTable("analytics", "forward_performance_summary", required=False),
     SnapshotTable("analytics", "current_elo_ratings", required=False),
     SnapshotTable("raw", "depth_charts_espn"),
     SnapshotTable("raw", "player_directory"),

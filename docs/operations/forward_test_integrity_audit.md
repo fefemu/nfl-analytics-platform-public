@@ -63,4 +63,5 @@ must not recreate historical predictions with the then-current model.
 
 The critical lock-time gap identified by this audit is addressed in code and covered
 by regression tests. Hosted-state persistence was verified as already implemented.
-Kickoff-near capture is implemented in P3b. Postgame settlement remains P4.
+Kickoff-near capture is implemented in P3b. The P4 postgame settlement layer is
+implemented and awaits validation against the first completed 2026 games.

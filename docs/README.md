@@ -307,6 +307,11 @@ Documents the immutable first-signal entry, latest available pre-kickoff compari
 Moneyline price movement and directionally normalized Spread/Total line movement.
 It explicitly distinguishes the current tracking output from kickoff-near CLV.
 
+### [Forward Performance](data_model/forward_performance.md)
+
+Documents final-result settlement of immutable 2026 entry observations, flat-stake
+units and ROI, drawdown, Moneyline Brier/Log Loss, and CLV coverage summaries.
+
 ### Injury, Depth Chart and Player Usage
 
 - `021_player_game_injury_quality_checks.sql`
@@ -327,6 +332,7 @@ It explicitly distinguishes the current tracking output from kickoff-near CLV.
 - `034_current_game_score_predictions_quality_checks.sql`
 - `035_historical_market_evaluation_quality_checks.sql`
 - `036_forward_refresh_quality_checks.sql`
+- `037_forward_performance_quality_checks.sql`
 
 ---
 

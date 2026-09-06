@@ -61,7 +61,8 @@ There is no implicit default mode. One of `--snapshot` or `--online` is required
 5. archive every future board row;
 6. mark positive-EV rows as forward tip candidates;
 7. refresh latest pre-kickoff market-movement comparisons;
-8. finalize the refresh audit row.
+8. settle locked entries whose games now have final scores and rebuild performance summaries;
+9. finalize the refresh audit row.
 
 ## Audit and Recovery
 
@@ -73,6 +74,8 @@ Disconnect DBeaver and other DuckDB writers before running. The generated DuckDB
 
 - `analytics.forward_betting_board_archive`: immutable pregame market snapshots;
 - `analytics.forward_tip_market_movement`: each selection's first positive-EV entry compared with its latest later pregame snapshot;
+- `analytics.forward_tip_settlement`: pending or finalized W/L/push and locked-price unit results;
+- `analytics.forward_performance_summary`: season/week and market-level ROI, drawdown and Moneyline probability scores;
 - `analytics.refresh_run_history`: operational run audit.
 
 Only rows whose `commence_time` is later than the odds fetch, prediction generation,
@@ -93,4 +96,5 @@ Run quality checks with:
 
 ```powershell
 python -m src.utils.run_sql sql/036_forward_refresh_quality_checks.sql
+python -m src.utils.run_sql sql/037_forward_performance_quality_checks.sql
 ```
