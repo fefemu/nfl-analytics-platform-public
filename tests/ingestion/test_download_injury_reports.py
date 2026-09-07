@@ -541,6 +541,57 @@ def test_download_season_injuries_overwrites_existing_file(
     assert saved_data.equals(injury_data)
 
 
+def test_current_unsupported_nflreadpy_season_uses_espn_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Use the validated current ESPN adapter when nflreadpy lags a season."""
+
+    monkeypatch.setattr(injury_ingestion, "INJURY_DATA_DIR", tmp_path)
+    monkeypatch.setattr(
+        injury_ingestion.nfl,
+        "load_injuries",
+        lambda season: (_ for _ in ()).throw(
+            ValueError("Season must be between 2009 and 2025")
+        ),
+    )
+    import src.ingestion.download_current_espn_injuries as espn_ingestion
+
+    def fake_download(output_file: Path) -> Path:
+        create_injury_frame(season=2026).write_parquet(output_file)
+        return output_file
+
+    monkeypatch.setattr(
+        espn_ingestion,
+        "download_current_espn_injuries",
+        fake_download,
+    )
+
+    returned_file = download_season_injuries(2026, overwrite=True)
+
+    assert returned_file == tmp_path / "injury_reports_2026.parquet"
+    assert pl.read_parquet(returned_file).schema == CANONICAL_INJURY_SCHEMA
+
+
+def test_historical_value_error_remains_critical(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Do not downgrade the same provider error for a historical season."""
+
+    monkeypatch.setattr(injury_ingestion, "INJURY_DATA_DIR", tmp_path)
+    monkeypatch.setattr(
+        injury_ingestion.nfl,
+        "load_injuries",
+        lambda season: (_ for _ in ()).throw(
+            ValueError("Season must be between 2009 and 2025")
+        ),
+    )
+
+    with pytest.raises(ValueError, match="between 2009 and 2025"):
+        download_season_injuries(2025, overwrite=True)
+
+
 def test_download_injury_reports_processes_each_season(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

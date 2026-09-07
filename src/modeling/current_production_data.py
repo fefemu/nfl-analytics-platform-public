@@ -77,6 +77,51 @@ EXTERNAL_NFELO_TABLE = (
     "external_nfelo_game_ratings"
 )
 
+DEPTH_CHART_SCHEMA = "processed"
+DEPTH_CHART_TABLE = "player_game_depth_chart"
+DEPTH_CHART_FULL_NAME = f"{DEPTH_CHART_SCHEMA}.{DEPTH_CHART_TABLE}"
+
+
+def _prepare_projected_qb_view(connection: duckdb.DuckDBPyConnection) -> None:
+    """Expose one timestamp-safe QB1 per game/team when depth charts exist."""
+
+    exists = connection.execute(
+        """
+        SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema = ? AND table_name = ?
+        """,
+        [DEPTH_CHART_SCHEMA, DEPTH_CHART_TABLE],
+    ).fetchone()[0]
+    if not exists:
+        connection.execute(
+            """
+            CREATE OR REPLACE TEMP VIEW current_projected_qbs AS
+            SELECT NULL::VARCHAR AS game_id, NULL::VARCHAR AS team,
+                   NULL::VARCHAR AS qb_id, NULL::VARCHAR AS qb_name
+            WHERE FALSE
+            """
+        )
+        return
+    connection.execute(
+        f"""
+        CREATE OR REPLACE TEMP VIEW current_projected_qbs AS
+        WITH ranked AS (
+            SELECT game_id, team, gsis_id AS qb_id, player_name AS qb_name,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY game_id, team
+                       ORDER BY depth_rank, position_slot NULLS LAST,
+                                source_snapshot_at DESC, player_name
+                   ) AS row_number
+            FROM {DEPTH_CHART_FULL_NAME}
+            WHERE UPPER(player_position) = 'QB'
+              AND gsis_id IS NOT NULL
+              AND depth_rank IS NOT NULL
+        )
+        SELECT game_id, team, qb_id, qb_name
+        FROM ranked WHERE row_number = 1
+        """
+    )
+
 
 REQUIRED_SCHEDULE_COLUMNS = {
     "game_id",
@@ -271,6 +316,7 @@ def load_current_production_inputs(
     games can use the external Elo-QB logistic fallback.
     """
 
+    _prepare_projected_qb_view(connection)
     upcoming_games = connection.execute(
         f"""
         WITH external_team_rows AS (
@@ -347,16 +393,16 @@ def load_current_production_inputs(
             schedule.away_team,
             schedule.location,
 
-            schedule.home_qb_id
+            COALESCE(schedule.home_qb_id, home_projected_qb.qb_id)
                 AS home_listed_qb_id,
 
-            schedule.home_qb_name
+            COALESCE(schedule.home_qb_name, home_projected_qb.qb_name)
                 AS home_listed_qb_name,
 
-            schedule.away_qb_id
+            COALESCE(schedule.away_qb_id, away_projected_qb.qb_id)
                 AS away_listed_qb_id,
 
-            schedule.away_qb_name
+            COALESCE(schedule.away_qb_name, away_projected_qb.qb_name)
                 AS away_listed_qb_name,
 
             home_elo.elo_rating
@@ -462,14 +508,22 @@ def load_current_production_inputs(
             ON schedule.away_team
                 = away_elo.team
 
+        LEFT JOIN current_projected_qbs AS home_projected_qb
+            ON schedule.game_id = home_projected_qb.game_id
+           AND schedule.home_team = home_projected_qb.team
+
+        LEFT JOIN current_projected_qbs AS away_projected_qb
+            ON schedule.game_id = away_projected_qb.game_id
+           AND schedule.away_team = away_projected_qb.team
+
         LEFT JOIN {QB_RATINGS_FULL_NAME}
             AS home_qb
-            ON schedule.home_qb_id
+            ON COALESCE(schedule.home_qb_id, home_projected_qb.qb_id)
                 = home_qb.qb_id
 
         LEFT JOIN {QB_RATINGS_FULL_NAME}
             AS away_qb
-            ON schedule.away_qb_id
+            ON COALESCE(schedule.away_qb_id, away_projected_qb.qb_id)
                 = away_qb.qb_id
 
         LEFT JOIN {INJURY_FEATURES_FULL_NAME}

@@ -481,6 +481,36 @@ def test_load_inputs_preserves_fallback_game(
     )
 
 
+def test_load_inputs_uses_depth_chart_qb1_when_schedule_qb_is_missing(
+    connection: duckdb.DuckDBPyConnection,
+) -> None:
+    """Resolve a genuinely pregame QB from the timestamped depth chart."""
+
+    connection.execute(
+        """
+        CREATE TABLE processed.player_game_depth_chart (
+            game_id VARCHAR, team VARCHAR, gsis_id VARCHAR,
+            player_name VARCHAR, player_position VARCHAR,
+            depth_rank INTEGER, position_slot INTEGER,
+            source_snapshot_at TIMESTAMPTZ
+        );
+        INSERT INTO processed.player_game_depth_chart VALUES
+            ('2026_01_BUF_KC', 'KC', 'QB_KC', 'Kansas City QB',
+             'QB', 1, 1, TIMESTAMPTZ '2026-09-07 08:00:00+00');
+        INSERT INTO analytics.current_qb_ratings VALUES
+            ('QB_KC', 'Kansas City QB', 'KC', 6.0,
+             DATE '2026-01-04', 1.0);
+        """
+    )
+
+    row = load_current_production_inputs(connection).loc[
+        lambda frame: frame["game_id"] == "2026_01_BUF_KC"
+    ].iloc[0]
+
+    assert row["away_listed_qb_id"] == "QB_KC"
+    assert row["away_listed_qb_rating"] == pytest.approx(6.0)
+
+
 def test_load_production_training_data(
     connection: duckdb.DuckDBPyConnection,
 ) -> None:

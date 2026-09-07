@@ -38,7 +38,26 @@ INJURY_DATA_DIR = PROJECT_ROOT / "data" / "raw" / "injuries"
 
 FIRST_AVAILABLE_SEASON = 2009
 FIRST_MODELING_SEASON = 2018
-LAST_COMPLETED_SEASON = 2025
+# Injury reports are an in-season source, so the active season is refreshable.
+LAST_COMPLETED_SEASON = 2026
+
+
+class CurrentInjurySourceUnavailableError(RuntimeError):
+    """Signal that nflreadpy does not yet expose the active injury season."""
+
+
+def is_unsupported_current_season_error(
+    error: ValueError,
+    season: int,
+) -> bool:
+    """Recognize nflreadpy's explicit active-season validation failure."""
+
+    message = str(error).lower()
+    return (
+        season == LAST_COMPLETED_SEASON
+        and "season must be between" in message
+        and str(season - 1) in message
+    )
 
 INJURY_KEY_COLUMNS = (
     "season",
@@ -336,6 +355,39 @@ def download_season_injuries(
 
     try:
         injury_data = nfl.load_injuries(season)
+    except ValueError as error:
+        if is_unsupported_current_season_error(error, season):
+            from src.ingestion.download_current_espn_injuries import (
+                download_current_espn_injuries,
+            )
+            logger.warning(
+                "nflreadpy does not yet support season %s; using the "
+                "validated ESPN current-availability feed.", season,
+            )
+            downloaded_file = download_current_espn_injuries(season_file)
+            injury_data = normalize_injury_schema(
+                pl.read_parquet(downloaded_file)
+            )
+            validate_injury_data(
+                injury_data=injury_data,
+                season=season,
+            )
+            temporary_file = season_file.with_suffix(".tmp.parquet")
+            injury_data.write_parquet(temporary_file)
+            temporary_file.replace(season_file)
+            logger.info(
+                "ESPN injury ingestion completed for season %s: "
+                "%s rows and %s columns.",
+                season,
+                injury_data.height,
+                injury_data.width,
+            )
+            return season_file
+        logger.exception(
+            "Failed to download injury reports for season %s.",
+            season,
+        )
+        raise
     except Exception:
         logger.exception(
             "Failed to download injury reports for season %s.",
