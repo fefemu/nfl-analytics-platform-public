@@ -102,6 +102,7 @@ The automated in-season refresh, prospective market tracking, kickoff-near odds 
 | P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | Completed 2026-09-06 | Completed; live values populate after settled games exist |
 | P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | In progress 2026-09-06 | Automated and offline gates pass; live dispatcher verification is scheduled for 2026-09-08 |
 | P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
+| P8 | Audit cross-model consistency between frozen Moneyline probabilities, Spread margins and algebraically derived scores on identical OOS games | 2–4 person-days | Evaluation-only; complete before changing model architecture or adding a disagreement UI |
 
 Estimated remaining total after P0–P2: **10.5–17.5 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. The Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.
 
@@ -168,6 +169,37 @@ At minimum, provide:
 - label simulation ranges as reference intervals rather than confidence intervals for model skill;
 - explain that a good absolute Brier score does not imply an exploitable betting edge or profitability;
 - keep this task evaluation-only and do not tune the production model against the benchmark sample.
+
+### P8 — Cross-model consistency validation
+
+- generate or recover row-level expanding-window OOS predictions from the currently
+  frozen Moneyline and Spread specifications on exactly the same games;
+- do not substitute the older historical-ledger Moneyline routing for the current
+  injury-enhanced blend when drawing production conclusions;
+- measure the relationship between Moneyline probability and predicted home margin,
+  including probability and margin buckets;
+- report opposite-favorite frequency overall and specifically in the 55–60%,
+  58–60% and more extreme probability ranges;
+- list extreme inconsistencies and retain game, season, fold, model version and
+  prediction mode so every row is reproducible;
+- compare Brier score and Log Loss for agreement versus disagreement games;
+- compare Spread MAE and bias for agreement versus disagreement games;
+- use paired or bootstrap uncertainty intervals where the disagreement sample is
+  large enough, and show the sample size prominently;
+- evaluate whether disagreement frequency or performance changes by season and by
+  early-season versus later-season windows;
+- treat implied team scores as algebraic presentation outputs from Total and Spread,
+  not as independent team-score forecasts;
+- make no production-model change from this audit alone. Decide afterward whether
+  the evidence supports model recalibration, a joint architecture, or presentation
+  changes.
+
+Preliminary diagnostic only: the existing 2021–2024 historical betting ledger has
+1,022 common Moneyline/Spread games and 43 opposite-favorite cases (4.21%). In the
+58–60% favorite-probability band it has 3 of 76 cases (3.95%). Agreement games show
+better descriptive Brier, Log Loss and Spread MAE than disagreement games. These
+figures are not the P8 result because that ledger uses an older Moneyline routing;
+P8 must reproduce the currently frozen injury-enhanced blend out of sample.
 
 ---
 

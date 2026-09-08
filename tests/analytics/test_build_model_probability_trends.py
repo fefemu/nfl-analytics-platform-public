@@ -24,6 +24,9 @@ def create_predictions(database: Path, home_probability: float = 0.60) -> None:
                    1::INTEGER AS week, 'KC'::VARCHAR AS home_team,
                    'BUF'::VARCHAR AS away_team, ?::DOUBLE AS home_win_probability,
                    (1.0 - ?)::DOUBLE AS away_win_probability,
+                   'probability_model'::VARCHAR AS model_name,
+                   '1.0.0'::VARCHAR AS model_version,
+                   'PRIMARY'::VARCHAR AS prediction_mode,
                    TIMESTAMP '2026-09-01 12:00:00' AS prediction_generated_at
             """,
             [home_probability, home_probability],
@@ -99,6 +102,38 @@ def test_missing_prior_is_new_prediction_not_zero_change(tmp_path: Path) -> None
             """
         ).fetchone()
     assert row == ("NEW", "NEW", None, None)
+
+
+def test_routing_change_suppresses_numeric_probability_trend(tmp_path: Path) -> None:
+    database = tmp_path / "source.duckdb"
+    create_predictions(database, 0.60)
+    archive_previous_published_predictions(database)
+    with duckdb.connect(str(database)) as connection:
+        connection.execute(
+            """
+            UPDATE analytics.current_game_predictions
+            SET home_win_probability = 0.68,
+                away_win_probability = 0.32,
+                prediction_mode = 'FALLBACK'
+            """
+        )
+
+    build_current_game_probability_trends(database)
+
+    with duckdb.connect(str(database)) as connection:
+        row = connection.execute(
+            f"""
+            SELECT home_probability_trend, away_probability_trend,
+                   home_probability_change_pp, away_probability_change_pp,
+                   previous_prediction_mode, current_prediction_mode,
+                   is_comparable_model_state
+            FROM {CURRENT_TABLE}
+            """
+        ).fetchone()
+    assert row == (
+        "MODEL_CHANGED", "MODEL_CHANGED", None, None,
+        "PRIMARY", "FALLBACK", False,
+    )
 
 
 def test_unpublished_archive_rows_never_become_reference(tmp_path: Path) -> None:

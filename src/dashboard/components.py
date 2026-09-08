@@ -152,20 +152,31 @@ def probability_trend_badge(
     labels = {
         "HU": {
             "NEW": "Új előrejelzés",
+            "MODEL_CHANGED": "Új modellbecslés",
             "UNCHANGED": "Lényegében változatlan",
             "INCREASE": "Növekedett",
             "DECREASE": "Csökkent",
         },
         "EN": {
             "NEW": "New prediction",
+            "MODEL_CHANGED": "New model estimate",
             "UNCHANGED": "Essentially unchanged",
             "INCREASE": "Increased",
             "DECREASE": "Decreased",
         },
     }
-    symbols = {"NEW": "•", "UNCHANGED": "→", "INCREASE": "↑", "DECREASE": "↓"}
-    tones = {"NEW": "new", "UNCHANGED": "neutral", "INCREASE": "increase", "DECREASE": "decrease"}
-    tooltip = (
+    symbols = {"NEW": "•", "MODEL_CHANGED": "–", "UNCHANGED": "→", "INCREASE": "↑", "DECREASE": "↓"}
+    tones = {"NEW": "new", "MODEL_CHANGED": "new", "UNCHANGED": "neutral", "INCREASE": "increase", "DECREASE": "decrease"}
+    if normalized == "MODEL_CHANGED":
+        tooltip = (
+            "A korábbi becslés eltérő modellútvonallal készült, ezért a "
+            "változás nem hasonlítható össze közvetlenül."
+            if language == "HU" else
+            "The previous estimate used a different model route, so the change "
+            "is not directly comparable."
+        )
+    else:
+        tooltip = (
         "Modellváltozás — A modell győzelmi valószínűségének változása az előző "
         "sikeres, publikált modellfrissítéshez képest. A megjelenített % érték a "
         "valószínűség abszolút változását mutatja, nem relatív százalékos változást. "
@@ -175,17 +186,17 @@ def probability_trend_badge(
         "successfully published model refresh. The displayed % value represents the absolute "
         "change in probability, not relative percentage growth. The arrow indicates the direction "
         "of the model estimate, not betting value."
-    )
+        )
     numeric_change = None if pd.isna(change_pp) else float(change_pp)
     if normalized == "UNCHANGED" and numeric_change is not None:
         numeric_change = 0.0
     value = ""
-    if normalized != "NEW" and numeric_change is not None:
+    if normalized not in {"NEW", "MODEL_CHANGED"} and numeric_change is not None:
         value = f"{numeric_change:+.1f}%" if normalized != "UNCHANGED" else "0.0%"
         if language == "HU":
             value = value.replace(".", ",")
     if (
-        normalized != "NEW"
+        normalized not in {"NEW", "MODEL_CHANGED"}
         and not pd.isna(previous_probability)
         and not pd.isna(current_probability)
         and numeric_change is not None
@@ -200,7 +211,9 @@ def probability_trend_badge(
         else:
             tooltip += f" Previous: {previous} · Current: {current} · Change: {change}."
     label = labels.get(language, labels["EN"]).get(normalized, labels["EN"]["NEW"])
-    if compact and normalized != "NEW":
+    if normalized == "MODEL_CHANGED":
+        visible = f"{symbols[normalized]} {label}"
+    elif compact and normalized != "NEW":
         visible = f"{symbols.get(normalized, '•')} {value}"
     elif normalized == "NEW":
         visible = label

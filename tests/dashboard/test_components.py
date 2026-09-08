@@ -86,6 +86,20 @@ def test_probability_trend_never_renders_signed_zero() -> None:
     assert "pp" not in positive_zero + negative_zero
 
 
+def test_probability_trend_hides_delta_when_model_route_changed() -> None:
+    english = probability_trend_badge("MODEL_CHANGED", 7.5, "EN", compact=True)
+    hungarian = probability_trend_badge("MODEL_CHANGED", -7.5, "HU")
+
+    assert "– New model estimate" in english
+    assert "different model route" in english
+    assert "– Új modellbecslés" in hungarian
+    assert "eltérő modellútvonallal" in hungarian
+    assert "7.5" not in english
+    assert "7,5" not in hungarian
+    assert "↑" not in english + hungarian
+    assert "↓" not in english + hungarian
+
+
 def test_probability_trend_supports_inward_tooltip_alignment() -> None:
     left = probability_trend_badge(
         "UNCHANGED", 0.0, "EN", compact=True, tooltip_align="left"

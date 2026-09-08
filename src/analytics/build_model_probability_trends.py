@@ -52,12 +52,19 @@ def _ensure_archive_table(connection: duckdb.DuckDBPyConnection) -> None:
             team VARCHAR,
             outcome_side VARCHAR,
             win_probability DOUBLE,
+            model_name VARCHAR,
+            model_version VARCHAR,
+            prediction_mode VARCHAR,
             prediction_generated_at TIMESTAMP,
             archived_at TIMESTAMPTZ,
             publication_status VARCHAR
         )
         """
     )
+    for column in ("model_name", "model_version", "prediction_mode"):
+        connection.execute(
+            f"ALTER TABLE {ARCHIVE_TABLE} ADD COLUMN IF NOT EXISTS {column} VARCHAR"
+        )
 
 
 def archive_previous_published_predictions(database_file: Path) -> int:
@@ -89,13 +96,20 @@ def archive_previous_published_predictions(database_file: Path) -> int:
             )
             connection.execute(
                 f"""
-                INSERT INTO {ARCHIVE_TABLE}
+                INSERT INTO {ARCHIVE_TABLE} (
+                    published_snapshot_id, game_id, season, week, team,
+                    outcome_side, win_probability, model_name, model_version,
+                    prediction_mode, prediction_generated_at, archived_at,
+                    publication_status
+                )
                 SELECT ?, game_id, season, week, home_team, 'HOME',
-                       home_win_probability, prediction_generated_at, ?, 'PUBLISHED'
+                       home_win_probability, model_name, model_version,
+                       prediction_mode, prediction_generated_at, ?, 'PUBLISHED'
                 FROM {PREDICTION_TABLE}
                 UNION ALL
                 SELECT ?, game_id, season, week, away_team, 'AWAY',
-                       away_win_probability, prediction_generated_at, ?, 'PUBLISHED'
+                       away_win_probability, model_name, model_version,
+                       prediction_mode, prediction_generated_at, ?, 'PUBLISHED'
                 FROM {PREDICTION_TABLE}
                 """,
                 [snapshot_id, archived_at, snapshot_id, archived_at],
@@ -145,8 +159,18 @@ def build_current_game_probability_trends(
                        current.home_team AS team, 'HOME' AS outcome_side,
                        current.home_win_probability AS current_probability,
                        prior.win_probability AS previous_probability,
-                       100.0 * (current.home_win_probability - prior.win_probability)
-                           AS probability_change_pp,
+                       prior.model_name AS previous_model_name,
+                       prior.model_version AS previous_model_version,
+                       prior.prediction_mode AS previous_prediction_mode,
+                       current.model_name AS current_model_name,
+                       current.model_version AS current_model_version,
+                       current.prediction_mode AS current_prediction_mode,
+                       COALESCE(
+                           prior.model_name = current.model_name
+                           AND prior.model_version = current.model_version
+                           AND prior.prediction_mode = current.prediction_mode,
+                           FALSE
+                       ) AS is_comparable_model_state,
                        prior.prediction_generated_at AS previous_prediction_generated_at,
                        current.prediction_generated_at AS current_prediction_generated_at
                 FROM {PREDICTION_TABLE} AS current
@@ -157,23 +181,40 @@ def build_current_game_probability_trends(
                        current.away_team AS team, 'AWAY' AS outcome_side,
                        current.away_win_probability AS current_probability,
                        prior.win_probability AS previous_probability,
-                       100.0 * (current.away_win_probability - prior.win_probability)
-                           AS probability_change_pp,
+                       prior.model_name AS previous_model_name,
+                       prior.model_version AS previous_model_version,
+                       prior.prediction_mode AS previous_prediction_mode,
+                       current.model_name AS current_model_name,
+                       current.model_version AS current_model_version,
+                       current.prediction_mode AS current_prediction_mode,
+                       COALESCE(
+                           prior.model_name = current.model_name
+                           AND prior.model_version = current.model_version
+                           AND prior.prediction_mode = current.prediction_mode,
+                           FALSE
+                       ) AS is_comparable_model_state,
                        prior.prediction_generated_at AS previous_prediction_generated_at,
                        current.prediction_generated_at AS current_prediction_generated_at
                 FROM {PREDICTION_TABLE} AS current
                 LEFT JOIN prior ON prior.game_id = current.game_id
                     AND prior.team = current.away_team AND prior.outcome_side = 'AWAY'
+            ), comparable AS (
+                SELECT *,
+                    CASE WHEN is_comparable_model_state
+                         THEN 100.0 * (current_probability - previous_probability)
+                    END AS probability_change_pp
+                FROM team_trends
             ), classified AS (
                 SELECT *,
                     CASE
                         WHEN previous_probability IS NULL THEN 'NEW'
+                        WHEN NOT is_comparable_model_state THEN 'MODEL_CHANGED'
                         WHEN ABS(probability_change_pp) < ? THEN 'UNCHANGED'
                         WHEN probability_change_pp > 0 THEN 'INCREASE'
                         ELSE 'DECREASE'
                     END AS trend_direction,
                     ?::DOUBLE AS neutral_threshold_pp
-                FROM team_trends
+                FROM comparable
             )
             SELECT
                 game_id, season, week,
@@ -191,6 +232,13 @@ def build_current_game_probability_trends(
                     AS home_probability_trend,
                 MAX(CASE WHEN outcome_side = 'AWAY' THEN trend_direction END)
                     AS away_probability_trend,
+                MAX(previous_model_name) AS previous_model_name,
+                MAX(previous_model_version) AS previous_model_version,
+                MAX(previous_prediction_mode) AS previous_prediction_mode,
+                MAX(current_model_name) AS current_model_name,
+                MAX(current_model_version) AS current_model_version,
+                MAX(current_prediction_mode) AS current_prediction_mode,
+                BOOL_AND(is_comparable_model_state) AS is_comparable_model_state,
                 MAX(previous_prediction_generated_at) AS previous_prediction_generated_at,
                 MAX(current_prediction_generated_at) AS current_prediction_generated_at,
                 MAX(neutral_threshold_pp) AS neutral_threshold_pp
@@ -202,8 +250,15 @@ def build_current_game_probability_trends(
         invalid = connection.execute(
             f"""
             SELECT COUNT(*) FROM {CURRENT_TABLE}
-            WHERE home_probability_trend NOT IN ('NEW','UNCHANGED','INCREASE','DECREASE')
-               OR away_probability_trend NOT IN ('NEW','UNCHANGED','INCREASE','DECREASE')
+            WHERE home_probability_trend NOT IN (
+                      'NEW','MODEL_CHANGED','UNCHANGED','INCREASE','DECREASE'
+                  )
+               OR away_probability_trend NOT IN (
+                      'NEW','MODEL_CHANGED','UNCHANGED','INCREASE','DECREASE'
+                  )
+               OR (NOT is_comparable_model_state
+                   AND (home_probability_change_pp IS NOT NULL
+                        OR away_probability_change_pp IS NOT NULL))
                OR (home_probability_change_pp IS NOT NULL
                    AND ABS(home_probability_change_pp + away_probability_change_pp) > 0.000001)
             """
