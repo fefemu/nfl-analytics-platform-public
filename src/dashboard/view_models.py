@@ -223,7 +223,9 @@ def top_pick_criteria_text(language: str) -> str:
             f"{criteria.maximum_edge_percentage_points:g}% modell–piac eltérés, "
             f"{criteria.minimum_expected_value_percent:g}–"
             f"{criteria.maximum_expected_value_percent:g}% EV és legalább "
-            f"{criteria.minimum_bookmakers} fogadóiroda."
+            f"{criteria.minimum_bookmakers} fogadóiroda. Az egymásnak ellentmondó "
+            "Moneyline- és Spread-jelzések nem kerülnek a kiválasztott piaci "
+            "jelzések közé."
         )
     return (
         f"Current criteria: at least {probability:.0f}% model probability, "
@@ -231,7 +233,27 @@ def top_pick_criteria_text(language: str) -> str:
         f"{criteria.maximum_edge_percentage_points:g}% model–market gap, "
         f"{criteria.minimum_expected_value_percent:g}–"
         f"{criteria.maximum_expected_value_percent:g}% EV and at least "
-        f"{criteria.minimum_bookmakers} bookmakers."
+        f"{criteria.minimum_bookmakers} bookmakers. Conflicting Moneyline and "
+        "Spread signals are excluded from selected market signals."
+    )
+
+
+def top_pick_guardrail_text(language: str) -> str:
+    """Explain the temporary winner-direction consistency guardrail."""
+
+    if language == "HU":
+        return (
+            "Ha a Moneyline- és Spread-modellek ugyanazon mérkőzés várható "
+            "győztesében nem értenek egyet, egyik side-jelzés sem kerül a "
+            "Kiválasztott piaci jelzések közé. Az eredeti modellbecslések és "
+            "piaci jelzések ettől nem változnak. A Total piacot ez a szabály "
+            "nem érinti."
+        )
+    return (
+        "If the Moneyline and Spread models disagree on the expected winner of "
+        "the same game, neither side recommendation is included in Selected "
+        "Market Signals. The underlying model predictions and market signals "
+        "remain unchanged. Totals are not affected by this rule."
     )
 
 

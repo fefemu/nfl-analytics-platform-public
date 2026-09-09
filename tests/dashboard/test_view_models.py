@@ -19,6 +19,8 @@ from src.dashboard.view_models import (
     select_preferred_market_sides,
     select_next_betting_week,
     select_weekly_highlights,
+    top_pick_criteria_text,
+    top_pick_guardrail_text,
 )
 
 
@@ -84,6 +86,44 @@ def test_publication_rule_includes_minimum_edge() -> None:
     result = classify_publication_candidates(data)
 
     assert not bool(result.iloc[0]["publication_eligible"])
+
+
+@pytest.mark.parametrize(
+    ("language", "expected_criteria", "expected_detail"),
+    [
+        (
+            "HU",
+            "Aktuális feltételek: legalább 50% modellvalószínűség, 3–10% "
+            "modell–piac eltérés, 0–20% EV és legalább 5 fogadóiroda. Az "
+            "egymásnak ellentmondó Moneyline- és Spread-jelzések nem kerülnek "
+            "a kiválasztott piaci jelzések közé.",
+            "Ha a Moneyline- és Spread-modellek ugyanazon mérkőzés várható "
+            "győztesében nem értenek egyet, egyik side-jelzés sem kerül a "
+            "Kiválasztott piaci jelzések közé. Az eredeti modellbecslések és "
+            "piaci jelzések ettől nem változnak. A Total piacot ez a szabály "
+            "nem érinti.",
+        ),
+        (
+            "EN",
+            "Current criteria: at least 50% model probability, 3–10% "
+            "model–market gap, 0–20% EV and at least 5 bookmakers. Conflicting "
+            "Moneyline and Spread signals are excluded from selected market "
+            "signals.",
+            "If the Moneyline and Spread models disagree on the expected winner "
+            "of the same game, neither side recommendation is included in "
+            "Selected Market Signals. The underlying model predictions and "
+            "market signals remain unchanged. Totals are not affected by this "
+            "rule.",
+        ),
+    ],
+)
+def test_top_pick_text_explains_guardrail_in_both_languages(
+    language: str,
+    expected_criteria: str,
+    expected_detail: str,
+) -> None:
+    assert top_pick_criteria_text(language) == expected_criteria
+    assert top_pick_guardrail_text(language) == expected_detail
 
 
 def test_publication_guardrail_suppresses_opposing_moneyline_and_spread_sides() -> None:

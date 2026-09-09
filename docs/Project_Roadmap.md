@@ -102,7 +102,8 @@ The automated in-season refresh, prospective market tracking, kickoff-near odds 
 | P5 | Add a bilingual Forward Performance / Live Results view with market, week, season and selection-scope filters plus explicit small-sample warnings | Completed 2026-09-06 | Completed; live values populate after settled games exist |
 | P6 | End-to-end tests, time-safety/reproducibility checks, documentation reconciliation and public-repository update | In progress 2026-09-06 | Automated and offline gates pass; live dispatcher verification is scheduled for 2026-09-08 |
 | P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
-| P8 | Audit cross-model consistency between frozen Moneyline probabilities, Spread margins and algebraically derived scores on identical OOS games | 2–4 person-days | Evaluation-only; complete before changing model architecture or adding a disagreement UI |
+| P8 | Audit cross-model consistency between frozen Moneyline probabilities, Spread margins and algebraically derived scores on identical OOS games | Completed 2026-09-09 | Temporary selection guardrail frozen; QB/injury Spread challenger rejected |
+| P9 | Add a separate Data Science Lab `Market Models / Piaci modellek` section for Moneyline, Spread and Totals specifications, validation and cross-model consistency governance | 2–4 person-days | Backlog; do not mix with the existing Moneyline Model Selection section |
 
 Estimated remaining total after P0–P2: **10.5–17.5 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. The Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.
 
@@ -194,12 +195,29 @@ At minimum, provide:
   the evidence supports model recalibration, a joint architecture, or presentation
   changes.
 
-Preliminary diagnostic only: the existing 2021–2024 historical betting ledger has
-1,022 common Moneyline/Spread games and 43 opposite-favorite cases (4.21%). In the
-58–60% favorite-probability band it has 3 of 76 cases (3.95%). Agreement games show
-better descriptive Brier, Log Loss and Spread MAE than disagreement games. These
-figures are not the P8 result because that ledger uses an older Moneyline routing;
-P8 must reproduce the currently frozen injury-enhanced blend out of sample.
+Completed result: the reproducible 2021–2025 expanding-window audit contained 1,050
+common games. Opposite-favorite frequency increased from 1.90% for the external
+Elo/QB comparison route to 5.14% for the current QB/injury Moneyline blend. The
+expanded Moneyline model still improved pooled Brier score from 0.2161 to 0.2142,
+so it remained in production. A pre-forward-test selection guardrail now excludes
+both side recommendations when Moneyline and Spread predict different winners,
+without changing predictions, EVs, market rows or Totals.
+
+The fixed-alpha QB/injury Spread challenger improved MAE from 10.0307 to 10.0033
+and RMSE from 12.9046 to 12.8756, while disagreement fell from 5.14% to 4.10%.
+The paired MAE bootstrap 95% interval (-0.1018 to +0.0470) crossed zero and the
+season-level results were unstable. The challenger was rejected and the production
+Spread model was not changed.
+
+### P9 — Data Science Lab market-model documentation
+
+- add a separate `Market Models / Piaci modellek` section without changing or
+  mixing it into the existing Moneyline Model Selection section;
+- document Moneyline as win probability, Spread as expected margin and Totals as
+  expected combined points;
+- show each model's principal features, frozen specification and validation;
+- explain how the model outputs relate and how cross-model consistency is governed;
+- keep this as a presentation/documentation feature, not a reason to retune models.
 
 ---
 

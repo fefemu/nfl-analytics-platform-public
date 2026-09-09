@@ -1,7 +1,7 @@
 # Current Betting Board
 
 **Status:** Production
-**Last updated:** 2026-08-09
+**Last updated:** 2026-09-09
 
 ---
 
@@ -72,3 +72,26 @@ EV is a model estimate, not a guaranteed return. Prospective ROI and CLV evaluat
 Equivalent markets and matching lines are paired bookmaker by bookmaker. Margin is removed within each bookmaker first, and the resulting no-vig probabilities are combined as an equal-weighted consensus. The model–market probability gap compares the model with that benchmark. EV is calculated separately from model probability and the best available executable price.
 
 The Total Ridge model directly predicts combined points and the Spread model predicts margin. Displayed team scores are algebraically derived from those two estimates; they are not independently predicted and added.
+
+## Cross-model side-selection guardrail
+
+Moneyline and Spread remain separate production models. A leakage-safe audit of
+1,050 common 2021–2025 out-of-sample games found that the opposite-favorite rate
+increased from 1.90% for the external Elo/QB comparison route to 5.14% after the
+Moneyline QB/injury expansion. The expanded Moneyline model nevertheless improved
+overall Brier score (0.2161 to 0.2142), so it was not rolled back.
+
+Before the 2026 forward results began, selection was therefore frozen with a
+temporary consistency guardrail: when Moneyline and Spread predict different game
+winners, neither side recommendation is eligible for Selected Market Signals.
+This does not modify the underlying predictions, probabilities, expected values or
+market rows, and it does not affect Totals. Consistent combinations such as a
+Moneyline favorite paired with a large opposing-team handicap remain eligible when
+both models still predict the same game winner.
+
+The reproducible QB/injury Spread challenger produced MAE 10.0033 and RMSE 12.8756,
+compared with 10.0307 and 12.9046 for the current Spread model. Its Moneyline
+disagreement rate fell from 5.14% to 4.10%, but the paired MAE bootstrap 95% interval
+was -0.1018 to +0.0470 points. The improvement was very small, statistically
+unconvincing and unstable by season. The challenger was rejected; the production
+Spread specification remains unchanged.

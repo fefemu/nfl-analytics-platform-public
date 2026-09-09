@@ -17,6 +17,7 @@ from src.dashboard.view_models import (
     select_best_candidates,
     select_next_betting_week,
     top_pick_criteria_text,
+    top_pick_guardrail_text,
 )
 
 
@@ -224,6 +225,7 @@ def render_betting_board(
     )
     with st.expander("ⓘ Aktuális kiválasztási feltételek" if language == "HU" else "ⓘ Current selection criteria"):
         st.write(top_pick_criteria_text(language))
+        st.write(top_pick_guardrail_text(language))
     detail = select_best_candidates(
         classified.loc[classified["publication_eligible"]], positive_only=True
     )
