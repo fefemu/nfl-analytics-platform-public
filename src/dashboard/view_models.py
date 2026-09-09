@@ -159,13 +159,29 @@ def classify_publication_candidates(
     required = {
         "bookmaker_count", "model_probability",
         "probability_edge_percentage_points", "expected_value_percent",
-        "positive_expected_value",
+        "positive_expected_value", "game_id", "market_key",
+        "home_win_probability", "predicted_home_margin",
     }
     missing = sorted(required - set(board.columns))
     if missing:
         raise ValueError("Betting candidates are missing columns: " + ", ".join(missing))
 
     result = board.copy()
+    probability = pd.to_numeric(result["home_win_probability"], errors="coerce")
+    margin = pd.to_numeric(result["predicted_home_margin"], errors="coerce")
+    comparable = probability.notna() & margin.notna()
+    moneyline_home_favorite = probability.gt(0.5)
+    moneyline_away_favorite = probability.lt(0.5)
+    spread_home_favorite = margin.gt(0.0)
+    spread_away_favorite = margin.lt(0.0)
+    result["side_model_conflict"] = comparable & (
+        (moneyline_home_favorite & spread_away_favorite)
+        | (moneyline_away_favorite & spread_home_favorite)
+    )
+    result["side_recommendation_suppressed"] = (
+        result["side_model_conflict"]
+        & result["market_key"].isin(("h2h", "spreads"))
+    )
     result["publication_eligible"] = (
         result["positive_expected_value"].astype(bool)
         & result["bookmaker_count"].ge(criteria.minimum_bookmakers)
@@ -182,9 +198,15 @@ def classify_publication_candidates(
         & result["expected_value_percent"].le(
             criteria.maximum_expected_value_percent
         )
+        & ~result["side_recommendation_suppressed"]
     )
-    result["publication_status"] = np.where(
-        result["publication_eligible"], "TOP_PICK", "NOT_SELECTED"
+    result["publication_status"] = np.select(
+        [
+            result["publication_eligible"],
+            result["side_recommendation_suppressed"],
+        ],
+        ["TOP_PICK", "SUPPRESSED_SIDE_CONFLICT"],
+        default="NOT_SELECTED",
     )
     return result
 

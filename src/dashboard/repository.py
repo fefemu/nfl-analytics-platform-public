@@ -207,9 +207,30 @@ class DashboardRepository:
     def load_current_betting_board(self) -> pd.DataFrame:
         """Load the current standardized betting board when available."""
 
-        if "current_betting_board" not in self.health().available_tables:
+        required = {
+            "current_betting_board",
+            "current_game_predictions",
+            "current_game_spread_predictions",
+        }
+        if not required.issubset(self.health().available_tables):
             return pd.DataFrame()
-        return self.read_table("current_betting_board")
+        connection = self._connect()
+        try:
+            return connection.execute(
+                """
+                SELECT
+                    board.*,
+                    probability.home_win_probability,
+                    spread.predicted_home_margin
+                FROM analytics.current_betting_board AS board
+                INNER JOIN analytics.current_game_predictions AS probability
+                    USING (game_id)
+                INNER JOIN analytics.current_game_spread_predictions AS spread
+                    USING (game_id)
+                """
+            ).fetchdf()
+        finally:
+            connection.close()
 
     def load_forward_performance(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Load prepared live-forward settlement and summary products."""

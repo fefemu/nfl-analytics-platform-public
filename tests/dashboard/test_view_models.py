@@ -39,6 +39,8 @@ def create_board() -> pd.DataFrame:
         "probability_edge_percentage_points": [4.0, -1.0, 2.0],
         "expected_value_percent": [10.0, -2.0, 4.0],
         "positive_expected_value": [True, False, True],
+        "home_win_probability": [0.60, 0.50, 0.60],
+        "predicted_home_margin": [2.0, 0.0, 2.0],
     })
 
 
@@ -82,6 +84,73 @@ def test_publication_rule_includes_minimum_edge() -> None:
     result = classify_publication_candidates(data)
 
     assert not bool(result.iloc[0]["publication_eligible"])
+
+
+def test_publication_guardrail_suppresses_opposing_moneyline_and_spread_sides() -> None:
+    base = create_board().iloc[0].to_dict()
+    rows = []
+    for market_key, outcome_name, point in (
+        ("h2h", "BUF", None),
+        ("spreads", "HOU", 1.0),
+        ("totals", "Over", 47.5),
+    ):
+        row = base.copy()
+        row.update({
+            "game_id": "BUF_HOU",
+            "home_team": "HOU",
+            "away_team": "BUF",
+            "market_key": market_key,
+            "outcome_name": outcome_name,
+            "point": point,
+            "bookmaker_count": 8,
+            "model_probability": 0.59,
+            "probability_edge_percentage_points": 7.0,
+            "expected_value_percent": 10.0,
+            "positive_expected_value": True,
+            "home_win_probability": 0.41,
+            "predicted_home_margin": 0.1,
+        })
+        rows.append(row)
+
+    result = classify_publication_candidates(pd.DataFrame(rows))
+
+    sides = result.loc[result["market_key"].isin(["h2h", "spreads"])]
+    total = result.loc[result["market_key"].eq("totals")].iloc[0]
+    assert not sides["publication_eligible"].any()
+    assert set(sides["publication_status"]) == {"SUPPRESSED_SIDE_CONFLICT"}
+    assert bool(total["publication_eligible"])
+    assert total["publication_status"] == "TOP_PICK"
+
+
+def test_publication_guardrail_keeps_consistent_ml_and_large_underdog_spread() -> None:
+    data = create_board().iloc[[0, 0]].copy().reset_index(drop=True)
+    data.loc[:, ["game_id", "home_team", "away_team"]] = ["BUF_HOU", "HOU", "BUF"]
+    data.loc[:, "bookmaker_count"] = 8
+    data.loc[:, "model_probability"] = 0.59
+    data.loc[:, "probability_edge_percentage_points"] = 7.0
+    data.loc[:, "expected_value_percent"] = 10.0
+    data.loc[:, "positive_expected_value"] = True
+    data.loc[:, "home_win_probability"] = 0.41
+    data.loc[:, "predicted_home_margin"] = -2.0
+    data.loc[0, ["market_key", "outcome_name", "point"]] = ["h2h", "BUF", None]
+    data.loc[1, ["market_key", "outcome_name", "point"]] = ["spreads", "HOU", 7.5]
+
+    result = classify_publication_candidates(data)
+
+    assert result["publication_eligible"].all()
+    assert not result["side_model_conflict"].any()
+
+
+def test_publication_guardrail_does_not_invent_favorite_for_pickem() -> None:
+    data = create_board().iloc[[0]].copy()
+    data.loc[:, "bookmaker_count"] = 8
+    data.loc[:, "home_win_probability"] = 0.60
+    data.loc[:, "predicted_home_margin"] = 0.0
+
+    result = classify_publication_candidates(data)
+
+    assert bool(result.iloc[0]["publication_eligible"])
+    assert not bool(result.iloc[0]["side_model_conflict"])
 
 
 def test_market_preferences_use_liquid_line_then_model_probability() -> None:

@@ -12,6 +12,7 @@ def create_candidate() -> pd.Series:
         "expected_value_percent": 12.0, "best_decimal_odds": 2.10,
         "best_bookmaker_title": "Book A", "bookmaker_count": 4,
         "prediction_mode": "FALLBACK", "positive_expected_value": True,
+        "home_win_probability": 0.60, "predicted_home_margin": 2.0,
     })
 
 
