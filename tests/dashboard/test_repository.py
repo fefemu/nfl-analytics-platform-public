@@ -145,6 +145,31 @@ def test_forward_performance_requires_both_prepared_tables(monkeypatch, tmp_path
     assert summary.iloc[0]["season"] == 2026
 
 
+def test_live_results_reads_only_verified_result_layers(monkeypatch, tmp_path: Path) -> None:
+    repository = DashboardRepository(tmp_path / "unused.duckdb")
+    health = DashboardHealth(
+        True,
+        ("completed_game_prediction_results", "selected_signal_settlement",
+         "selected_signal_performance_summary", "forward_tip_settlement"),
+        (), "SUCCESS", None,
+    )
+    frames = {
+        "completed_game_prediction_results": pd.DataFrame({"game_id": ["g"]}),
+        "selected_signal_settlement": pd.DataFrame({"entry_archive_key": ["s"]}),
+        "selected_signal_performance_summary": pd.DataFrame({"season": [2026]}),
+    }
+    requested = []
+    monkeypatch.setattr(repository, "health", lambda: health)
+    monkeypatch.setattr(repository, "read_table", lambda table, *args: requested.append(table) or frames[table])
+
+    model, settlement, summary = repository.load_live_results()
+
+    assert model.iloc[0]["game_id"] == "g"
+    assert settlement.iloc[0]["entry_archive_key"] == "s"
+    assert summary.iloc[0]["season"] == 2026
+    assert "forward_tip_settlement" not in requested
+
+
 def test_data_science_lab_loads_aggregated_impact_summary(tmp_path: Path) -> None:
     database = tmp_path / "dashboard.duckdb"
     with duckdb.connect(str(database)) as connection:

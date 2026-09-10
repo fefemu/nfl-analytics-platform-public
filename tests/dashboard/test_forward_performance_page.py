@@ -7,7 +7,10 @@ from src.dashboard.pages.forward_performance import (
     _number,
     _result_label,
     _select_summary,
+    betting_empty_message,
+    has_live_results,
     has_settled_results,
+    prepare_model_result_rows,
 )
 
 
@@ -19,14 +22,6 @@ def test_select_summary_respects_season_week_and_market():
     assert _select_summary(summary, 2026, None, "ALL")["tracked_count"] == 3
     assert _select_summary(summary, 2026, 1, "h2h")["tracked_count"] == 1
     assert _select_summary(summary, 2026, 2, "h2h") is None
-
-
-def test_select_summary_accepts_pre_scope_snapshot_for_all_tracked():
-    legacy = pd.DataFrame([
-        {"season": 2026, "week": None, "market_key": "ALL", "tracked_count": 2},
-    ])
-    assert _select_summary(legacy, 2026, None, "ALL")["tracked_count"] == 2
-    assert _select_summary(legacy, 2026, None, "ALL", "SETTLED_ONLY") is None
 
 
 def test_filter_settlement_supports_market_week_and_settled_scope():
@@ -54,3 +49,35 @@ def test_live_results_visibility_requires_a_settled_row():
     assert has_settled_results(pd.DataFrame()) is False
     assert has_settled_results(pending) is False
     assert has_settled_results(settled) is True
+
+
+def test_live_results_visibility_accepts_model_results_without_bets():
+    assert has_live_results(pd.DataFrame({"game_id": ["g1"]}), pd.DataFrame())
+
+
+def test_ne_sea_model_result_is_seattle_and_correct():
+    result = prepare_model_result_rows(pd.DataFrame([{
+        "game_id": "2026_01_NE_SEA", "season": 2026, "week": 1,
+        "commence_time": "2026-09-10T00:20:00Z", "away_team": "NE",
+        "home_team": "SEA", "away_win_probability": 0.397,
+        "home_win_probability": 0.603, "predicted_winner": "SEA",
+        "away_score": 10, "home_score": 13,
+    }])).iloc[0]
+    assert result["predicted_winner"] == "SEA"
+    assert result["actual_winner"] == "SEA"
+    assert bool(result["moneyline_winner_correct"])
+    assert result["predicted_win_probability"] == 0.603
+
+
+def test_verified_betting_empty_state_is_bilingual():
+    assert "Még nincs lezárt publikált jelzés" in betting_empty_message("HU")
+    assert "No published selections have been settled yet" in betting_empty_message("EN")
+
+
+def test_legacy_opportunity_scope_is_not_user_facing():
+    source = __import__("pathlib").Path(
+        "src/dashboard/pages/forward_performance.py"
+    ).read_text(encoding="utf-8")
+    assert "All tracked" not in source
+    assert "Minden követett" not in source
+    assert "Locked selections" not in source

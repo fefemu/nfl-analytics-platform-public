@@ -14,7 +14,7 @@ from src.dashboard.components import (
 from src.dashboard.i18n import Language, tr
 from src.dashboard.repository import DashboardRepository
 from src.dashboard.pages.betting import render_betting_board
-from src.dashboard.pages.forward_performance import has_settled_results, render_forward_performance
+from src.dashboard.pages.forward_performance import has_live_results, render_forward_performance
 from src.dashboard.pages.teams import render_teams
 from src.dashboard.pages.about import render_about
 from src.dashboard.pages.data_science_lab import render_data_science_lab
@@ -50,17 +50,14 @@ health = repository.health()
 # Streamlit Cloud can rerun this entry point before reloading an already imported
 # repository module during a deployment. Keep rollout compatible with that brief
 # mixed-version state instead of crashing the whole application.
-if hasattr(repository, "load_forward_performance"):
-    forward_settlement, forward_performance_summary = repository.load_forward_performance()
+if hasattr(repository, "load_live_results"):
+    model_results, betting_settlement, betting_performance_summary = repository.load_live_results()
 else:
-    forward_tables = {"forward_tip_settlement", "forward_performance_summary"}
-    if forward_tables.issubset(set(health.available_tables)):
-        forward_settlement = repository.read_table("forward_tip_settlement")
-        forward_performance_summary = repository.read_table("forward_performance_summary")
-    else:
-        forward_settlement, forward_performance_summary = pd.DataFrame(), pd.DataFrame()
+    model_results, betting_settlement, betting_performance_summary = (
+        pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    )
 available_pages = dict(PAGES)
-if not has_settled_results(forward_settlement):
+if not has_live_results(model_results, betting_settlement):
     available_pages.pop("PERFORMANCE")
 
 query_page = st.query_params.get("page")
@@ -161,7 +158,9 @@ elif page_key == "GAMES":
 elif page_key == "BETTING":
     render_betting_board(repository.load_current_betting_board(), language)
 elif page_key == "PERFORMANCE":
-    render_forward_performance(forward_settlement, forward_performance_summary, language)
+    render_forward_performance(
+        model_results, betting_settlement, betting_performance_summary, language
+    )
 elif page_key == "TEAMS":
     render_teams(
         repository.load_current_team_rosters(),

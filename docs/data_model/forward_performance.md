@@ -1,26 +1,39 @@
-# Forward Performance
+# Live Results methodology
 
-`analytics.forward_tip_settlement` is the derived settlement ledger for the
-immutable positive-EV entry observations stored by the 2026 forward archive.
-It never rewrites entry prices, probabilities, model identity or timestamps.
+The public Live Results page separates two different questions.
 
-Rows remain `PENDING` until `processed.schedule` contains both final scores and
-marks the game complete. Completed Moneyline, Spread and Total selections are
-settled as `WIN`, `LOSS` or `PUSH` at the locked entry line and decimal odds.
-Flat-stake profit is decimal odds minus one for a win, minus one for a loss and
-zero for a push.
+## Model Results
 
-Moneyline Brier loss and Log Loss use the locked probability of the selected
-outcome. Tied games are pushes and are excluded from these binary probability
-scores. Spread and Total rows are not included in probability scoring.
+Model Results measures prediction quality independently of betting selections.
+`analytics.completed_game_prediction_results` contains one row per completed game,
+selected from the latest valid immutable pre-game state in
+`analytics.game_prediction_archive`. It reports the predicted winner, pre-game win
+probability, actual winner, correctness, Brier loss and Log Loss.
 
-`analytics.forward_performance_summary` provides season, season/market, week
-and week/market aggregates: tracked and settled counts, W/L/push, win rate,
-average odds, units, ROI, maximum drawdown, Moneyline Brier/Log Loss and
-qualifying prospective-CLV coverage. Each aggregate is prepared for all tracked
-rows, settled rows only and CLV-eligible rows so the UI never recalculates
-performance metrics. These are live-forward results only and
-must not be combined with historical backtests.
+## Betting Results
 
-The first live samples are inherently small and are not evidence of sustainable
-profitability.
+Betting Results measures only selections that were actually eligible for the
+production **Selected Market Signals** view before kickoff. The source chain is:
+
+`analytics.selected_signal_archive` → `analytics.selected_signal_settlement` →
+`analytics.selected_signal_performance_summary`.
+
+The archive stores the first published game-market selection, its price and line,
+model and market inputs, publication timestamp, refresh/snapshot identifiers, and
+the criteria and guardrail versions used for the decision. It is append-only and a
+later refresh cannot replace the entry state. Settlement uses a flat one-unit stake.
+
+Verified forward betting tracking begins only when this immutable selection archive
+is deployed. Historical selections are not reconstructed with current rules. A
+positive-EV observation is not automatically a published selection.
+
+## Research observations
+
+The legacy `analytics.forward_betting_board_archive`,
+`analytics.forward_tip_market_movement`, `analytics.forward_tip_settlement` and
+`analytics.forward_performance_summary` remain available for compatibility and
+research into market opportunities. They are not read by the user-facing Live
+Results page and their W-L-P or ROI aggregates must not be presented as Betting
+Results.
+
+In short: **Model Results ≠ Betting Results**.

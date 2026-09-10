@@ -28,6 +28,11 @@ def test_common_hungarian_labels_do_not_mix_english_prose() -> None:
     assert tr("HU", "nav_performance") == "Élő eredmények"
 
 
+def test_live_results_subtitle_does_not_describe_legacy_market_movement() -> None:
+    assert "market movement" not in tr("EN", "subtitle_performance").lower()
+    assert "piaci mozg" not in tr("HU", "subtitle_performance").lower()
+
+
 def test_missing_translation_is_rejected() -> None:
     with pytest.raises(KeyError, match="Missing dashboard translation"):
         tr("HU", "missing")

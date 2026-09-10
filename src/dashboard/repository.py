@@ -244,6 +244,25 @@ class DashboardRepository:
             self.read_table("forward_performance_summary"),
         )
 
+    def load_live_results(self) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        """Load verified model results and immutable published selections only."""
+
+        available = set(self.health().available_tables)
+        model = (
+            self.read_table("completed_game_prediction_results")
+            if "completed_game_prediction_results" in available else pd.DataFrame()
+        )
+        required = {
+            "selected_signal_settlement", "selected_signal_performance_summary",
+        }
+        if not required.issubset(available):
+            return model, pd.DataFrame(), pd.DataFrame()
+        return (
+            model,
+            self.read_table("selected_signal_settlement"),
+            self.read_table("selected_signal_performance_summary"),
+        )
+
     def load_current_team_rosters(self) -> pd.DataFrame:
         """Load the latest timestamped depth chart with available player context."""
 
