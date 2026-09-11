@@ -27,6 +27,7 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
     spread = _localized_number(row["predicted_home_margin"], language)
     total = _localized_number(row["predicted_total_points"], language)
     spread = f"+{spread}" if float(row["predicted_home_margin"]) >= 0 else spread
+    is_completed = bool(row.get("is_completed", False))
     away_trend = probability_trend_badge(
         row.get("away_probability_trend"), row.get("away_probability_change_pp"), language,
         compact=True,
@@ -41,6 +42,32 @@ def _matchup_card(row: pd.Series, language: Language) -> str:
         current_probability=row.get("home_win_probability"),
         tooltip_align="right",
     )
+    if is_completed:
+        away_actual = int(row["away_score"])
+        home_actual = int(row["home_score"])
+        winner = away if away_actual > home_actual else home if home_actual > away_actual else None
+        away_name = f"<b>{away}</b>" if winner == away else away
+        home_name = f"<b>{home}</b>" if winner == home else home
+        predicted_winner = str(row["predicted_winner"])
+        predicted_probability = float(
+            row["home_win_probability"] if predicted_winner == home
+            else row["away_win_probability"]
+        )
+        final_label = "VÉGEREDMÉNY" if language == "HU" else "FINAL"
+        pregame_label = "Meccs előtti becslés" if language == "HU" else "Pre-game prediction"
+        return f"""
+        <div class="nap-card nap-matchup-card nap-schedule-completed">
+          <div class="nap-matchup-meta"><span class="nap-schedule-status">{final_label}</span> · {week_label}</div>
+          <div class="nap-matchup-line">
+            <div>{team_badge(away, 38)} {away_name}<span>{away_actual}</span></div>
+            <div class="nap-at">–</div>
+            <div>{team_badge(home, 38)} {home_name}<span>{home_actual}</span></div>
+          </div>
+          <div class="nap-scoreline">{pregame_label}: <b>{predicted_winner} {predicted_probability:.1%}</b>
+          <span>{score_label}: {away} {away_score} – {home_score} {home}</span></div>
+          <div class="nap-scoreline"><span>Spread {spread} · Total {total}</span></div>
+        </div>
+        """
     return f"""
     <div class="nap-card nap-matchup-card">
       <div class="nap-matchup-meta">{week_label} · {kickoff}</div>
@@ -65,6 +92,13 @@ def _open_game_center(game_id: str, language: Language) -> None:
     st.query_params.from_dict({"language": language, "page": "GAMES"})
 
 
+def _open_results(language: Language) -> None:
+    """Navigate from a FINAL weekly card to aggregate model evaluation."""
+    st.session_state["dashboard_page"] = "PERFORMANCE"
+    st.session_state[f"dashboard_page_selector_{language}"] = "PERFORMANCE"
+    st.query_params.from_dict({"language": language, "page": "PERFORMANCE"})
+
+
 def render_weekly_overview(
     games: pd.DataFrame,
     language: Language = DEFAULT_LANGUAGE,
@@ -86,53 +120,47 @@ def render_weekly_overview(
         index=weeks.index(default_week) if default_week in weeks else 0,
     )
     week_games = games.loc[games["week"] == selected_week].copy()
-    featured, favorite, highest_total = select_weekly_highlights(week_games)
+    completed_mask = week_games.get(
+        "is_completed", pd.Series(False, index=week_games.index)
+    ).fillna(False).astype(bool)
+    completed_count = int(completed_mask.sum())
+    upcoming_games = week_games.loc[~completed_mask]
 
     summary = st.columns(4)
     summary[0].metric(tr(language, "games"), len(week_games))
-    away_probability = float(featured["away_win_probability"])
-    home_probability = float(featured["home_win_probability"])
-    summary[1].metric(
-        tr(language, "most_even"),
-        f"{featured['away_team']} @ {featured['home_team']}",
-        help=(
-            "The game whose model win probabilities are closest to 50/50 "
-            "within the selected week."
-            if language == "EN" else
-            "Az a heti mérkőzés, amelynél a modell győzelmi valószínűségei a legközelebb vannak az 50–50%-hoz."
-        ),
+    summary[0].caption(
+        f"{completed_count} lezárt · {len(upcoming_games)} hátralévő"
+        if language == "HU" else
+        f"{completed_count} Final · {len(upcoming_games)} Upcoming"
     )
-    summary[1].caption(f"{away_probability:.1%} / {home_probability:.1%}")
-    favorite_is_home = (
-        float(favorite["home_win_probability"])
-        >= float(favorite["away_win_probability"])
-    )
-    favorite_team = favorite["home_team"] if favorite_is_home else favorite["away_team"]
-    favorite_probability = (
-        favorite["home_win_probability"]
-        if favorite_is_home else favorite["away_win_probability"]
-    )
-    summary[2].metric(
-        "Biggest favorite" if language == "EN" else "Legnagyobb favorit",
-        str(favorite_team),
-        help=(
-            "The team with the highest model win probability in the selected week."
-            if language == "EN" else
-            "A kiválasztott hét legmagasabb modell szerinti győzelmi valószínűségével rendelkező csapata."
-        ),
-    )
-    summary[2].caption(
-        f"{float(favorite_probability):.1%} · "
-        f"{favorite['away_team']} @ {favorite['home_team']}"
-    )
-    summary[3].metric(
-        tr(language, "highest_total"),
-        f"{highest_total['away_team']} @ {highest_total['home_team']}",
-    )
-    summary[3].caption(
-        f"{_localized_number(highest_total['predicted_total_points'], language)} "
-        + ("points" if language == "EN" else "pont")
-    )
+    if not upcoming_games.empty:
+        featured, favorite, highest_total = select_weekly_highlights(upcoming_games)
+        away_probability = float(featured["away_win_probability"])
+        home_probability = float(featured["home_win_probability"])
+    else:
+        featured = favorite = highest_total = None
+    if featured is not None:
+        summary[1].metric(
+            tr(language, "most_even"),
+            f"{featured['away_team']} @ {featured['home_team']}",
+            help=(
+                "The upcoming game whose model win probabilities are closest to 50/50."
+                if language == "EN" else
+                "Az a hátralévő mérkőzés, amelynél a modell valószínűségei a legközelebb vannak az 50–50%-hoz."
+            ),
+        )
+        summary[1].caption(f"{away_probability:.1%} / {home_probability:.1%}")
+        favorite_is_home = float(favorite["home_win_probability"]) >= float(favorite["away_win_probability"])
+        favorite_team = favorite["home_team"] if favorite_is_home else favorite["away_team"]
+        favorite_probability = favorite["home_win_probability"] if favorite_is_home else favorite["away_win_probability"]
+        summary[2].metric("Biggest favorite" if language == "EN" else "Legnagyobb favorit", str(favorite_team))
+        summary[2].caption(f"{float(favorite_probability):.1%} · {favorite['away_team']} @ {favorite['home_team']}")
+        summary[3].metric(tr(language, "highest_total"), f"{highest_total['away_team']} @ {highest_total['home_team']}")
+        summary[3].caption(f"{_localized_number(highest_total['predicted_total_points'], language)} " + ("points" if language == "EN" else "pont"))
+    else:
+        summary[1].metric(tr(language, "most_even"), "—")
+        summary[2].metric("Biggest favorite" if language == "EN" else "Legnagyobb favorit", "—")
+        summary[3].metric(tr(language, "highest_total"), "—")
     st.markdown(f"### {tr(language, 'matchups')}")
     for start in range(0, len(week_games), 2):
         columns = st.columns(2)
@@ -145,10 +173,13 @@ def render_weekly_overview(
                         unsafe_allow_html=True,
                     )
                     game_id = str(week_games.iloc[index]["game_id"])
+                    is_completed = bool(week_games.iloc[index].get("is_completed", False))
                     st.button(
-                        "Meccs részletei →" if language == "HU" else "Matchup details →",
+                        ("Kiértékelés megtekintése →" if language == "HU" else "View evaluation →")
+                        if is_completed else
+                        ("Meccs részletei →" if language == "HU" else "Matchup details →"),
                         key=f"overview_game_{game_id}",
-                        on_click=_open_game_center,
-                        args=(game_id, language),
+                        on_click=_open_results if is_completed else _open_game_center,
+                        args=(language,) if is_completed else (game_id, language),
                         use_container_width=True,
                     )

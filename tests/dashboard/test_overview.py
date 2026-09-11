@@ -48,3 +48,26 @@ def test_weekly_summary_does_not_use_directional_metric_deltas() -> None:
     assert "summary[1].caption" in source
     assert "summary[2].caption" in source
     assert "summary[3].caption" in source
+
+
+def test_final_matchup_card_prioritizes_actual_score_and_hides_trend() -> None:
+    row = pd.Series({
+        "game_id": "2026_01_NE_SEA", "week": 1,
+        "gameday": "2026-09-10", "gametime": "02:20",
+        "away_team": "NE", "home_team": "SEA",
+        "away_win_probability": .397, "home_win_probability": .603,
+        "predicted_winner": "SEA", "implied_away_score": 22.6,
+        "implied_home_score": 26.7, "predicted_home_margin": 4.1,
+        "predicted_total_points": 49.3, "away_score": 10,
+        "home_score": 13, "is_completed": True,
+        "away_probability_trend": "DECREASE",
+        "away_probability_change_pp": -.6,
+        "home_probability_trend": "INCREASE",
+        "home_probability_change_pp": .6,
+    })
+    markup = _matchup_card(row, "EN")
+    assert "FINAL" in markup
+    assert "Pre-game prediction" in markup
+    assert "SEA 60.3%" in markup
+    assert "22.6 – 26.7" in markup
+    assert "↑" not in markup and "↓" not in markup

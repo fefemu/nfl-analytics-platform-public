@@ -104,6 +104,7 @@ The automated in-season refresh, prospective market tracking, kickoff-near odds 
 | P7 | Benchmark out-of-sample Brier/Log Loss against the same-game de-vigged closing market and the expected Brier distribution implied by the frozen probabilities | 2–4 person-days | Evaluation-only; after common-sample market coverage is audited |
 | P8 | Audit cross-model consistency between frozen Moneyline probabilities, Spread margins and algebraically derived scores on identical OOS games | Completed 2026-09-09 | Temporary selection guardrail frozen; QB/injury Spread challenger rejected |
 | P9 | Add a separate Data Science Lab `Market Models / Piaci modellek` section for Moneyline, Spread and Totals specifications, validation and cross-model consistency governance | 2–4 person-days | Backlog; do not mix with the existing Moneyline Model Selection section |
+| P10 | Add timely postgame result refresh and completed-game presentation while preserving immutable pregame predictions | P10a/P10b completed 2026-09-10; P10c implementation started 2026-09-11; P10d remaining | Complete before P7 and P9 |
 
 Estimated remaining total after P0–P2: **10.5–17.5 person-days**, or roughly **2–3 focused working weeks**. Allow **3–4 calendar weeks** if delivered alongside production refresh monitoring and unrelated UI work. The Forward Performance page must not be presented as evidence of profitability until genuine settled forward observations exist.
 
@@ -218,6 +219,41 @@ Spread model was not changed.
 - show each model's principal features, frozen specification and validation;
 - explain how the model outputs relate and how cross-model consistency is governed;
 - keep this as a presentation/documentation feature, not a reason to retune models.
+
+### P10 — Postgame results and completed-game presentation
+
+Deliver this operationally before P7 and P9:
+
+- P10a: audit the final-score source, refresh latency, immutable prediction
+  selection, settlement path and dashboard contracts;
+- P10b: add an Odds-API-independent lightweight result refresh that updates the
+  schedule, settles forward observations, rebuilds the dashboard artifact and
+  publishes only when completed-game state changed;
+- P10c-1: give Weekly Overview separate Upcoming and FINAL card states, retain
+  immutable pregame context beside the actual score, suppress probability trends
+  after FINAL, add weekly FINAL/upcoming counts, and use result-data freshness on
+  Results;
+- P10c-2: rename Live Results to Results / Eredmények and make all explanatory,
+  empty-state and bilingual terminology user-facing and consistent;
+- P10c-3: split Model Results into Moneyline, Spread and Total forward evaluation
+  using only immutable pregame predictions and FINAL scores;
+- P10d: validate the complete path on real completed games and prove idempotent
+  reruns do not duplicate or rewrite archived observations.
+
+P10b is implemented with a two-hour September–February GitHub Actions cadence,
+free nflverse schedule input, changed-FINAL detection, clean no-op behavior,
+immutable game-level prediction history, existing forward settlement reuse and a
+completed-game presentation table. It does not invoke models, odds, injuries,
+depth charts, play-by-play or simulation. P10c must consume this backend contract
+rather than reconstructing pregame values in the UI.
+
+The 2026-09-10 audit is recorded in
+`docs/operations/postgame_result_refresh_audit.md`. The implementation must add a
+game-level immutable prediction product: the existing betting archive contains
+only offered market rows, while the published probability archive does not retain
+Spread, Total or implied-score outputs. Current prediction tables cannot be used
+as permanent postgame history because their modeling source excludes completed
+games.
 
 ---
 

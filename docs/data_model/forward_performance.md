@@ -1,10 +1,17 @@
-# Live Results methodology
+# Results methodology
 
-The public Live Results page separates two different questions.
+The public Results page separates two different questions. Weekly Overview
+describes the selected week's completed and upcoming games, Betting Board shows
+current market signals, and Results evaluates locked pregame predictions and
+published selections.
 
 ## Model Results
 
 Model Results measures prediction quality independently of betting selections.
+Moneyline reports accuracy, Brier score and Log Loss. Spread reports error in the
+immutable predicted home margin, and Total reports error in the immutable
+predicted combined points; both use MAE, RMSE and signed prediction-minus-actual
+bias. No sportsbook line is used in these model-quality calculations.
 `analytics.completed_game_prediction_results` contains one row per completed game,
 selected from the latest valid immutable pre-game state in
 `analytics.game_prediction_archive`. It reports the predicted winner, pre-game win

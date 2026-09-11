@@ -1,4 +1,4 @@
-"""Bilingual live results with separate model and published-betting scopes."""
+"""Bilingual results with separate model and published-betting scopes."""
 
 from __future__ import annotations
 
@@ -58,7 +58,21 @@ def prepare_model_result_rows(results: pd.DataFrame) -> pd.DataFrame:
         rows["away_team"].astype(str) + " " + rows["away_score"].astype("Int64").astype(str)
         + "–" + rows["home_team"].astype(str) + " " + rows["home_score"].astype("Int64").astype(str)
     )
+    rows["actual_home_margin"] = rows["home_score"] - rows["away_score"]
+    rows["actual_total_points"] = rows["home_score"] + rows["away_score"]
+    rows["spread_error"] = rows["predicted_home_margin"] - rows["actual_home_margin"]
+    rows["spread_absolute_error"] = rows["spread_error"].abs()
+    rows["total_error"] = rows["predicted_total_points"] - rows["actual_total_points"]
+    rows["total_absolute_error"] = rows["total_error"].abs()
     return rows.sort_values(["season", "week", "commence_time", "game_id"])
+
+
+def results_updated_at(model_results: pd.DataFrame) -> pd.Timestamp | None:
+    """Return the freshness of the FINAL evaluation dataset, not model refresh."""
+    if model_results.empty or "result_evaluated_at" not in model_results:
+        return None
+    values = pd.to_datetime(model_results["result_evaluated_at"], utc=True, errors="coerce")
+    return None if values.isna().all() else values.max()
 
 
 def _select_summary(summary: pd.DataFrame, season: int, week: int | None, market_key: str) -> pd.Series | None:
@@ -109,11 +123,11 @@ def _entry_line(row: pd.Series, language: Language) -> str:
 
 
 def betting_empty_message(language: Language) -> str:
-    """Explain the non-backfilled start of verified forward betting tracking."""
+    """Explain verified forward betting tracking without internal terminology."""
     return (
-        "A hiteles forward betting tracking az új selection archive bevezetésétől indul. Még nincs lezárt publikált jelzés."
+        "Még nincs lezárt publikált fogadási jelzés. A teljesítmény csak a kickoff előtt rögzített tippek alapján kerül kiértékelésre."
         if language == "HU" else
-        "Verified forward betting tracking starts from the introduction of the new selection archive. No published selections have been settled yet."
+        "No published betting selections have been settled yet. Performance is evaluated only from selections locked before kickoff."
     )
 
 
@@ -132,8 +146,66 @@ def _filters(rows: pd.DataFrame, language: Language, prefix: str, market: bool =
     return season, None if chosen == all_weeks else int(chosen), market_key
 
 
+def _regression_metrics(rows: pd.DataFrame, error_column: str) -> tuple[float, float, float]:
+    errors = pd.to_numeric(rows[error_column], errors="coerce").dropna()
+    if errors.empty:
+        return float("nan"), float("nan"), float("nan")
+    return float(errors.abs().mean()), float((errors.pow(2).mean()) ** 0.5), float(errors.mean())
+
+
+def _margin_label(value: object, home_team: object, away_team: object,
+                  language: Language) -> str:
+    if pd.isna(value):
+        return "—"
+    margin = float(value)
+    if abs(margin) < 0.05:
+        return "Pick'em"
+    team = str(home_team if margin > 0 else away_team)
+    amount = _number(abs(margin), language, 1)
+    return f"{team} {amount} ponttal" if language == "HU" else f"{team} by {amount}"
+
+
+def _render_regression_results(rows: pd.DataFrame, language: Language,
+                               *, market: str) -> None:
+    is_spread = market == "spread"
+    predicted = "predicted_home_margin" if is_spread else "predicted_total_points"
+    actual = "actual_home_margin" if is_spread else "actual_total_points"
+    error = "spread_error" if is_spread else "total_error"
+    absolute = "spread_absolute_error" if is_spread else "total_absolute_error"
+    mae, rmse, bias = _regression_metrics(rows, error)
+    metrics = st.columns(4)
+    with metrics[0]: metric_tile("Kiértékelt meccsek" if language == "HU" else "Games evaluated", str(len(rows)))
+    with metrics[1]: metric_tile("MAE", _number(mae, language, 2))
+    with metrics[2]: metric_tile("RMSE", _number(rmse, language, 2))
+    with metrics[3]: metric_tile("Bias", _number(bias, language, 2))
+    detail = rows.copy()
+    if is_spread:
+        detail["predicted_display"] = detail.apply(
+            lambda row: _margin_label(row[predicted], row["home_team"], row["away_team"], language), axis=1
+        )
+        detail["actual_display"] = detail.apply(
+            lambda row: _margin_label(row[actual], row["home_team"], row["away_team"], language), axis=1
+        )
+    else:
+        detail["predicted_display"] = detail[predicted].map(lambda value: _number(value, language, 1))
+        detail["actual_display"] = detail[actual].map(lambda value: _number(value, language, 0))
+    detail["absolute_display"] = detail[absolute].map(lambda value: _number(value, language, 1))
+    st.markdown("### " + ("Meccsenkénti modellértékelés" if language == "HU" else "Game-level model evaluation"))
+    st.dataframe(
+        detail[["week", "matchup", "predicted_display", "actual_display", "absolute_display"]],
+        width="stretch", hide_index=True,
+        column_config={
+            "week": "Hét" if language == "HU" else "Week",
+            "matchup": "Mérkőzés" if language == "HU" else "Matchup",
+            "predicted_display": ("Várt margin" if language == "HU" else "Predicted margin") if is_spread else ("Várt total" if language == "HU" else "Predicted total"),
+            "actual_display": ("Tényleges margin" if language == "HU" else "Actual margin") if is_spread else ("Tényleges total" if language == "HU" else "Actual total"),
+            "absolute_display": "Abszolút hiba" if language == "HU" else "Absolute error",
+        },
+    )
+
+
 def _render_model_results(model_results: pd.DataFrame, language: Language) -> None:
-    st.caption("A modell előrejelzési minősége, a betting kiválasztásoktól függetlenül."
+    st.caption("A modell előrejelzési minősége, a fogadási tippektől függetlenül."
                if language == "HU" else "Prediction quality of the model, independent of betting selections.")
     if model_results.empty:
         empty_state("Még nincs lezárt modellértékelés" if language == "HU" else "No completed model evaluation yet",
@@ -144,28 +216,34 @@ def _render_model_results(model_results: pd.DataFrame, language: Language) -> No
     rows = rows.loc[rows["season"].eq(season)]
     if week is not None:
         rows = rows.loc[rows["week"].eq(week)]
-    correct, total = int(rows["moneyline_winner_correct"].sum()), len(rows)
-    metrics = st.columns(4)
-    with metrics[0]: metric_tile("Kiértékelt meccsek" if language == "HU" else "Games evaluated", str(total))
-    with metrics[1]: metric_tile("Helyes / Pontosság" if language == "HU" else "Correct / Accuracy", f"{correct}/{total} · {_number(100 * correct / total if total else None, language, 1, '%')}")
-    with metrics[2]: metric_tile("Brier Score", _number(rows["moneyline_brier_loss"].mean(), language, 4))
-    with metrics[3]: metric_tile("Log Loss", _number(rows["moneyline_log_loss"].mean(), language, 4))
-    detail = rows.copy()
-    detail["probability"] = detail["predicted_win_probability"].map(lambda x: _number(100 * x, language, 1, "%"))
-    detail["actual"] = detail["actual_winner"].astype(str) + " · " + detail["final_score"]
-    detail["correct"] = detail["moneyline_winner_correct"].map({True: "Helyes" if language == "HU" else "Correct", False: "Helytelen" if language == "HU" else "Incorrect"})
-    st.markdown("### " + ("Meccsenkénti modellértékelés" if language == "HU" else "Game-level model evaluation"))
-    st.dataframe(detail[["week", "matchup", "predicted_winner", "probability", "actual", "correct"]], width="stretch", hide_index=True,
-                 column_config={"week": "Hét" if language == "HU" else "Week", "matchup": "Mérkőzés" if language == "HU" else "Matchup",
-                                "predicted_winner": "Várt győztes" if language == "HU" else "Predicted winner",
-                                "probability": "Meccs előtti valószínűség" if language == "HU" else "Pre-game win probability",
-                                "actual": "Tényleges győztes / végeredmény" if language == "HU" else "Actual winner / final score",
-                                "correct": "Értékelés" if language == "HU" else "Evaluation"})
+    moneyline_tab, spread_tab, total_tab = st.tabs(("Moneyline", "Spread", "Total"))
+    with moneyline_tab:
+        correct, total = int(rows["moneyline_winner_correct"].sum()), len(rows)
+        metrics = st.columns(4)
+        with metrics[0]: metric_tile("Kiértékelt meccsek" if language == "HU" else "Games evaluated", str(total))
+        with metrics[1]: metric_tile("Helyes predikciók / Pontosság" if language == "HU" else "Correct predictions / Accuracy", f"{correct}/{total} · {_number(100 * correct / total if total else None, language, 1, '%')}")
+        with metrics[2]: metric_tile("Brier Score", _number(rows["moneyline_brier_loss"].mean(), language, 4))
+        with metrics[3]: metric_tile("Log Loss", _number(rows["moneyline_log_loss"].mean(), language, 4))
+        detail = rows.copy()
+        detail["probability"] = detail["predicted_win_probability"].map(lambda x: _number(100 * x, language, 1, "%"))
+        detail["correct"] = detail["moneyline_winner_correct"].map({True: "Helyes" if language == "HU" else "Correct", False: "Helytelen" if language == "HU" else "Incorrect"})
+        st.markdown("### " + ("Meccsenkénti modellértékelés" if language == "HU" else "Game-level model evaluation"))
+        st.dataframe(detail[["week", "matchup", "predicted_winner", "probability", "actual_winner", "final_score", "correct"]], width="stretch", hide_index=True,
+                     column_config={"week": "Hét" if language == "HU" else "Week", "matchup": "Mérkőzés" if language == "HU" else "Matchup",
+                                    "predicted_winner": "Várt győztes" if language == "HU" else "Predicted winner",
+                                    "probability": "Meccs előtti valószínűség" if language == "HU" else "Pre-game probability",
+                                    "actual_winner": "Tényleges győztes" if language == "HU" else "Actual winner",
+                                    "final_score": "Végeredmény" if language == "HU" else "Final score",
+                                    "correct": "Értékelés" if language == "HU" else "Evaluation"})
+    with spread_tab:
+        _render_regression_results(rows, language, market="spread")
+    with total_tab:
+        _render_regression_results(rows, language, market="total")
 
 
 def _render_betting_results(settlement: pd.DataFrame, summary: pd.DataFrame, language: Language) -> None:
-    st.caption("Csak a kickoff előtt ténylegesen publikált, immutable módon zárolt jelzések."
-               if language == "HU" else "Only signals actually published and immutably locked before kickoff.")
+    st.caption("Csak a meccs kezdete előtt ténylegesen publikált és rögzített fogadási jelzések."
+               if language == "HU" else "Only betting selections actually published and locked before kickoff.")
     if settlement.empty or summary.empty:
         st.info(betting_empty_message(language))
         return
@@ -203,8 +281,8 @@ def render_forward_performance(model_results: pd.DataFrame, betting_settlement: 
                                betting_summary: pd.DataFrame,
                                language: Language = DEFAULT_LANGUAGE) -> None:
     """Render model quality and published betting performance separately."""
-    st.info("A Model Results a predikció minőségét, a Betting Results pedig kizárólag a publikált tippeket méri. A kettő nem ugyanaz."
-            if language == "HU" else "Model Results measures prediction quality; Betting Results measures only published selections. They are not the same.")
+    st.info("A modelleredmények a predikciók pontosságát, a fogadási eredmények pedig csak a ténylegesen publikált tippek teljesítményét mutatják."
+            if language == "HU" else "Model Results measure prediction quality. Betting Results measure only selections actually published before kickoff.")
     tab_labels = (("Modelleredmények", "Fogadási eredmények")
                   if language == "HU" else ("Model Results", "Betting Results"))
     model_tab, betting_tab = st.tabs(tab_labels)

@@ -1,6 +1,7 @@
 """Tests for the bilingual live-forward results page helpers."""
 
 import pandas as pd
+import pytest
 
 from src.dashboard.pages.forward_performance import (
     _filter_settlement,
@@ -11,6 +12,8 @@ from src.dashboard.pages.forward_performance import (
     has_live_results,
     has_settled_results,
     prepare_model_result_rows,
+    results_updated_at,
+    _regression_metrics,
 )
 
 
@@ -61,17 +64,38 @@ def test_ne_sea_model_result_is_seattle_and_correct():
         "commence_time": "2026-09-10T00:20:00Z", "away_team": "NE",
         "home_team": "SEA", "away_win_probability": 0.397,
         "home_win_probability": 0.603, "predicted_winner": "SEA",
+        "predicted_home_margin": 4.1, "predicted_total_points": 49.3,
         "away_score": 10, "home_score": 13,
+        "result_evaluated_at": "2026-09-10T17:04:54Z",
     }])).iloc[0]
     assert result["predicted_winner"] == "SEA"
     assert result["actual_winner"] == "SEA"
     assert bool(result["moneyline_winner_correct"])
     assert result["predicted_win_probability"] == 0.603
+    assert result["actual_home_margin"] == 3
+    assert result["spread_absolute_error"] == pytest.approx(1.1)
+    assert result["actual_total_points"] == 23
+    assert result["total_absolute_error"] == pytest.approx(26.3)
+
+
+def test_regression_metrics_use_prediction_minus_actual_bias():
+    rows = pd.DataFrame({"error": [2.0, -1.0]})
+    mae, rmse, bias = _regression_metrics(rows, "error")
+    assert mae == pytest.approx(1.5)
+    assert rmse == pytest.approx(2.5 ** 0.5)
+    assert bias == pytest.approx(0.5)
+
+
+def test_results_timestamp_comes_from_final_evaluation_dataset():
+    rows = pd.DataFrame({"result_evaluated_at": [
+        "2026-09-10T15:00:00Z", "2026-09-10T17:04:54Z",
+    ]})
+    assert results_updated_at(rows) == pd.Timestamp("2026-09-10T17:04:54Z")
 
 
 def test_verified_betting_empty_state_is_bilingual():
-    assert "Még nincs lezárt publikált jelzés" in betting_empty_message("HU")
-    assert "No published selections have been settled yet" in betting_empty_message("EN")
+    assert "Még nincs lezárt publikált fogadási jelzés" in betting_empty_message("HU")
+    assert "No published betting selections have been settled yet" in betting_empty_message("EN")
 
 
 def test_legacy_opportunity_scope_is_not_user_facing():

@@ -25,7 +25,8 @@ def test_common_hungarian_labels_do_not_mix_english_prose() -> None:
     assert tr("HU", "last_refresh") == "Utolsó sikeres frissítés"
     assert tr("HU", "market_comparison") == "Piaci összehasonlítás"
     assert tr("HU", "simulations") == "Szimulációk"
-    assert tr("HU", "nav_performance") == "Élő eredmények"
+    assert tr("HU", "nav_performance") == "Eredmények"
+    assert tr("EN", "nav_performance") == "Results"
 
 
 def test_live_results_subtitle_does_not_describe_legacy_market_movement() -> None:

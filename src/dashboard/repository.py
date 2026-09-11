@@ -167,7 +167,7 @@ class DashboardRepository:
         """ if has_trends else ""
         connection = self._connect()
         try:
-            return connection.execute(
+            upcoming = connection.execute(
                 f"""
                 SELECT
                     probability.game_id,
@@ -201,6 +201,28 @@ class DashboardRepository:
                          probability.gametime, probability.game_id
                 """
             ).fetchdf()
+            upcoming["is_completed"] = False
+            upcoming["away_score"] = pd.NA
+            upcoming["home_score"] = pd.NA
+
+            if "completed_game_prediction_results" not in self.health().available_tables:
+                return upcoming
+            completed = connection.execute(
+                "SELECT * FROM analytics.completed_game_prediction_results"
+            ).fetchdf()
+            if completed.empty:
+                return upcoming
+
+            # FINAL rows use the immutable kickoff-before archive. Never display a
+            # surviving current-table row for the same game beside that history.
+            upcoming = upcoming.loc[~upcoming["game_id"].isin(completed["game_id"])]
+            for column in upcoming.columns:
+                if column not in completed.columns:
+                    completed[column] = pd.NA
+            completed = completed.loc[:, upcoming.columns]
+            return pd.concat([upcoming, completed], ignore_index=True).sort_values(
+                ["week", "gameday", "gametime", "game_id"]
+            )
         finally:
             connection.close()
 

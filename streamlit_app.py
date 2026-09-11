@@ -14,7 +14,11 @@ from src.dashboard.components import (
 from src.dashboard.i18n import Language, tr
 from src.dashboard.repository import DashboardRepository
 from src.dashboard.pages.betting import render_betting_board
-from src.dashboard.pages.forward_performance import has_live_results, render_forward_performance
+from src.dashboard.pages.forward_performance import (
+    has_live_results,
+    render_forward_performance,
+    results_updated_at,
+)
 from src.dashboard.pages.teams import render_teams
 from src.dashboard.pages.about import render_about
 from src.dashboard.pages.data_science_lab import render_data_science_lab
@@ -133,8 +137,13 @@ page_key = selected
 render_analytics(page_key, language)
 page_title = tr(language, PAGES[selected][1])
 refresh_label = None
-if health.latest_refresh_at is not None:
-    refresh_label = format_refresh_timestamp(health.latest_refresh_at, language)
+page_updated_at = health.latest_refresh_at
+if page_key == "PERFORMANCE":
+    # Never label FINAL results with an unrelated prediction refresh time. Older
+    # snapshots without result provenance intentionally show no timestamp.
+    page_updated_at = results_updated_at(model_results)
+if page_updated_at is not None:
+    refresh_label = format_refresh_timestamp(page_updated_at, language)
 render_page_header(
     tr(language, "eyebrow"),
     page_title,
