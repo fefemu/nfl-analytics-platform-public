@@ -96,10 +96,10 @@ def test_publication_rule_includes_minimum_edge() -> None:
             "Aktuális feltételek: legalább 50% modellvalószínűség, 3–10% "
             "modell–piac eltérés, 0–20% EV és legalább 5 fogadóiroda. Az "
             "egymásnak ellentmondó Moneyline- és Spread-jelzések nem kerülnek "
-            "a kiválasztott piaci jelzések közé.",
+            "a Javasolt tippek közé.",
             "Ha a Moneyline- és Spread-modellek ugyanazon mérkőzés várható "
             "győztesében nem értenek egyet, egyik side-jelzés sem kerül a "
-            "Kiválasztott piaci jelzések közé. Az eredeti modellbecslések és "
+            "Javasolt tippek közé. Az eredeti modellbecslések és "
             "piaci jelzések ettől nem változnak. A Total piacot ez a szabály "
             "nem érinti.",
         ),
@@ -107,11 +107,10 @@ def test_publication_rule_includes_minimum_edge() -> None:
             "EN",
             "Current criteria: at least 50% model probability, 3–10% "
             "model–market gap, 0–20% EV and at least 5 bookmakers. Conflicting "
-            "Moneyline and Spread signals are excluded from selected market "
-            "signals.",
+            "Moneyline and Spread signals are excluded from Recommended Picks.",
             "If the Moneyline and Spread models disagree on the expected winner "
             "of the same game, neither side recommendation is included in "
-            "Selected Market Signals. The underlying model predictions and "
+            "Recommended Picks. The underlying model predictions and "
             "market signals remain unchanged. Totals are not affected by this "
             "rule.",
         ),
@@ -271,6 +270,7 @@ def test_create_matchup_labels_is_stable_and_readable() -> None:
     assert create_matchup_labels(games) == {
         "Week 1 · BUF @ KC · 2026-09-11 · 02:00 CEST": "2026_01_BUF_KC"
     }
+
 
 def test_nflverse_schedule_time_converts_to_hungarian_next_day() -> None:
     assert format_hungarian_kickoff("2026-09-10", "20:20") == (

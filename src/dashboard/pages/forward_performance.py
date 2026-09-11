@@ -125,9 +125,9 @@ def _entry_line(row: pd.Series, language: Language) -> str:
 def betting_empty_message(language: Language) -> str:
     """Explain verified forward betting tracking without internal terminology."""
     return (
-        "Még nincs lezárt publikált fogadási jelzés. A teljesítmény csak a kickoff előtt rögzített tippek alapján kerül kiértékelésre."
+        "Még nincs lezárt Javasolt tipp. A fogadási teljesítmény csak a Betting Boardon publikált és kickoff előtt rögzített Javasolt tippek alapján kerül kiértékelésre."
         if language == "HU" else
-        "No published betting selections have been settled yet. Performance is evaluated only from selections locked before kickoff."
+        "No Recommended Picks have been settled yet. Betting performance is evaluated only from Recommended Picks published on the Betting Board and locked before kickoff."
     )
 
 
@@ -242,8 +242,8 @@ def _render_model_results(model_results: pd.DataFrame, language: Language) -> No
 
 
 def _render_betting_results(settlement: pd.DataFrame, summary: pd.DataFrame, language: Language) -> None:
-    st.caption("Csak a meccs kezdete előtt ténylegesen publikált és rögzített fogadási jelzések."
-               if language == "HU" else "Only betting selections actually published and locked before kickoff.")
+    st.caption("A Betting Boardon Javasolt tippként publikált és a meccs kezdete előtt rögzített tippek forward teljesítménye."
+               if language == "HU" else "Forward performance of Recommended Picks published on the Betting Board and locked before kickoff.")
     if settlement.empty or summary.empty:
         st.info(betting_empty_message(language))
         return
@@ -254,7 +254,7 @@ def _render_betting_results(settlement: pd.DataFrame, summary: pd.DataFrame, lan
         st.info("Ehhez a szűréshez még nincs publikált jelzés." if language == "HU" else "No published selections match this filter yet.")
         return
     first = st.columns(4)
-    with first[0]: metric_tile("Lezárt / publikált" if language == "HU" else "Settled / Published", f"{int(aggregate['settled_count'])} / {int(aggregate['tracked_count'])}")
+    with first[0]: metric_tile("Lezárt / Javasolt tippek" if language == "HU" else "Settled / Recommended Picks", f"{int(aggregate['settled_count'])} / {int(aggregate['tracked_count'])}")
     with first[1]: metric_tile("W–L–P", f"{int(aggregate['win_count'])}–{int(aggregate['loss_count'])}–{int(aggregate['push_count'])}")
     with first[2]: metric_tile("Nettó unit" if language == "HU" else "Net units", _number(aggregate["total_profit_units"], language, 2, " u"))
     with first[3]: metric_tile("ROI", _number(aggregate["roi_percent"], language, 1, "%"))
@@ -262,7 +262,7 @@ def _render_betting_results(settlement: pd.DataFrame, summary: pd.DataFrame, lan
     with second[0]: metric_tile("Átlagodds" if language == "HU" else "Average odds", _number(aggregate["average_decimal_odds"], language, 2))
     with second[1]: metric_tile("CLV", "—", help_text="Későbbi closing snapshot adatokkal válik elérhetővé." if language == "HU" else "Available later with qualifying closing snapshots.")
     st.warning("A kis elemszámú forward minta nem bizonyít tartós nyereségességet." if language == "HU" else "A small forward sample is not evidence of sustainable profitability.")
-    st.markdown("### " + ("Publikált jelzések" if language == "HU" else "Published selections"))
+    st.markdown("### " + ("Publikált Javasolt tippek" if language == "HU" else "Published Recommended Picks"))
     detail = rows.copy()
     detail["matchup"] = detail["away_team"].astype(str) + " @ " + detail["home_team"].astype(str)
     detail["selection"] = detail.apply(_selection_label, axis=1)
@@ -281,8 +281,8 @@ def render_forward_performance(model_results: pd.DataFrame, betting_settlement: 
                                betting_summary: pd.DataFrame,
                                language: Language = DEFAULT_LANGUAGE) -> None:
     """Render model quality and published betting performance separately."""
-    st.info("A modelleredmények a predikciók pontosságát, a fogadási eredmények pedig csak a ténylegesen publikált tippek teljesítményét mutatják."
-            if language == "HU" else "Model Results measure prediction quality. Betting Results measure only selections actually published before kickoff.")
+    st.info("A modelleredmények a predikciók teljesítményét, a fogadási eredmények pedig kizárólag a Betting Boardon publikált Javasolt tippek teljesítményét mutatják."
+            if language == "HU" else "Model Results measure prediction performance, while Betting Results track only Recommended Picks published on the Betting Board.")
     tab_labels = (("Modelleredmények", "Fogadási eredmények")
                   if language == "HU" else ("Model Results", "Betting Results"))
     model_tab, betting_tab = st.tabs(tab_labels)

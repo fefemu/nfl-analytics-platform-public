@@ -94,8 +94,8 @@ def test_results_timestamp_comes_from_final_evaluation_dataset():
 
 
 def test_verified_betting_empty_state_is_bilingual():
-    assert "Még nincs lezárt publikált fogadási jelzés" in betting_empty_message("HU")
-    assert "No published betting selections have been settled yet" in betting_empty_message("EN")
+    assert "Még nincs lezárt Javasolt tipp" in betting_empty_message("HU")
+    assert "No Recommended Picks have been settled yet" in betting_empty_message("EN")
 
 
 def test_legacy_opportunity_scope_is_not_user_facing():

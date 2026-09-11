@@ -9,13 +9,13 @@ import streamlit as st
 from src.dashboard.components import empty_state, team_badge, tooltip_icon
 from src.dashboard.i18n import DEFAULT_LANGUAGE, Language, tr
 from src.dashboard.view_models import (
-    classify_publication_candidates,
     format_decimal_odds,
     format_utc_timestamp_in_hungary,
     market_display,
     prepare_forward_candidates,
-    select_best_candidates,
+    select_featured_picks,
     select_next_betting_week,
+    select_recommended_picks,
     top_pick_criteria_text,
     top_pick_guardrail_text,
 )
@@ -90,8 +90,7 @@ def _filter_candidates(
     market_key: str | None,
     matchup: str | None,
 ) -> pd.DataFrame:
-    filtered = classify_publication_candidates(board)
-    filtered = filtered.loc[filtered["publication_eligible"]].copy()
+    filtered = board.copy()
     if market_key:
         filtered = filtered.loc[filtered["market_key"] == market_key]
     if matchup:
@@ -104,14 +103,14 @@ def _filter_candidates(
 def _render_board_explanation(language: Language) -> None:
     if language == "HU":
         st.info(
-            "A **Top tippek** a következő NFL-hét azon piacait mutatják, ahol a modell "
+            "A **Javasolt tippek** a következő NFL-hét azon piacait mutatják, ahol a modell "
             "a legnagyobb eltérést látja a fogadóirodák árazásához képest. A rangsorolás "
             "a modell által becsült valószínűség, a margin nélküli piaci valószínűség "
             "és a várható érték alapján történik."
         )
     else:
         st.info(
-            "**Top picks** show next week's NFL markets where the model differs most "
+            "**Recommended Picks** show next week's NFL markets where the model differs most "
             "from current bookmaker pricing. Ranking uses model probability, no-vig "
             "market probability and expected value."
         )
@@ -130,7 +129,8 @@ def render_betting_board(
         )
         return
 
-    forward = prepare_forward_candidates(board, now=datetime.now(timezone.utc))
+    as_of = datetime.now(timezone.utc)
+    forward = prepare_forward_candidates(board, now=as_of)
     if forward.empty:
         empty_state(
             "No future market rows" if language == "EN" else "Nincs megjeleníthető jövőbeli piac",
@@ -141,6 +141,7 @@ def render_betting_board(
         return
 
     next_week, forward = select_next_betting_week(forward)
+    recommended = select_recommended_picks(board, as_of=as_of)
     latest_snapshot = forward["fetched_at"].max()
     snapshot_age = pd.Timestamp.now(tz="UTC") - latest_snapshot
     if snapshot_age > pd.Timedelta(hours=24):
@@ -170,26 +171,22 @@ def render_betting_board(
     with first_row[1]:
         matchup_label = st.selectbox("Mérkőzés" if language == "HU" else "Matchup", (all_matchups, *matchups))
     filtered = _filter_candidates(
-        forward,
+        recommended,
         market_labels[market_label],
         None if matchup_label == all_matchups else matchup_label,
     )
-    classified = filtered
-    cards = select_best_candidates(
-        classified.loc[classified["publication_eligible"]],
-        positive_only=True,
-    )
+    cards = select_featured_picks(filtered)
 
     st.caption(
         (
-            f"Következő hét: **{next_week}. hét** · {len(cards)} Top tipp. "
+            f"Következő hét: **{next_week}. hét** · {len(recommended)} Javasolt tipp. "
             "Csak a következő aktuális hét, kezdés előtt rögzített oddsai jelennek meg."
         ) if language == "HU" else (
-            f"Week {next_week} · {len(cards)} Top picks. "
+            f"Week {next_week} · {len(recommended)} Recommended Picks. "
             "Only pre-kickoff odds for the next upcoming week are shown."
         )
     )
-    if classified.empty:
+    if filtered.empty:
         empty_state(
             "No selected signals match these filters" if language == "EN" else "Nincs a szűrőknek megfelelő kiválasztott jelzés",
             "Choose another market or matchup."
@@ -204,8 +201,8 @@ def render_betting_board(
             "The current market has no signals matching the selection criteria."
         )
 
-    st.subheader("Top tippek" if language == "HU" else "Top picks")
-    top = cards.head(6)
+    st.subheader("Kiemelt tippek" if language == "HU" else "Featured Picks")
+    top = cards
     for start in range(0, len(top), 3):
         columns = st.columns(3)
         for offset, column in enumerate(columns):
@@ -217,18 +214,16 @@ def render_betting_board(
                         unsafe_allow_html=True,
                     )
 
-    st.markdown("### " + ("Kiválasztott piaci jelzések" if language == "HU" else "Selected market signals"))
+    st.markdown("### " + ("Javasolt tippek" if language == "HU" else "Recommended Picks"))
     st.caption(
-        "A táblázat csak azokat a piacokat mutatja, amelyek megfelelnek a modell kiválasztási feltételeinek."
+        "Azok a tippek, amelyek megfelelnek a modell aktuális kiválasztási feltételeinek."
         if language == "HU" else
-        "The table only shows markets that satisfy the model's selection criteria."
+        "Picks that meet the model's current selection criteria."
     )
     with st.expander("ⓘ Aktuális kiválasztási feltételek" if language == "HU" else "ⓘ Current selection criteria"):
         st.write(top_pick_criteria_text(language))
         st.write(top_pick_guardrail_text(language))
-    detail = select_best_candidates(
-        classified.loc[classified["publication_eligible"]], positive_only=True
-    )
+    detail = filtered.copy()
     if detail.empty:
         st.info(
             "A jelenlegi piacon nincs a kiválasztási feltételeknek megfelelő jelzés."

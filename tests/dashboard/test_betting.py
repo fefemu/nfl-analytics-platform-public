@@ -1,6 +1,7 @@
 import pandas as pd
 
 from src.dashboard.pages.betting import _candidate_card, _filter_candidates, _signed_number
+from src.dashboard.view_models import select_featured_picks
 
 
 def create_candidate() -> pd.Series:
@@ -49,3 +50,21 @@ def test_candidate_filters_apply_market_threshold_and_matchup() -> None:
 
     assert len(result) == 1
     assert result.iloc[0]["game_id"] == "2026_01_BUF_KC"
+
+
+def test_featured_picks_are_a_maximum_six_row_presentation_subset() -> None:
+    recommended = pd.DataFrame({"selection_key": [f"pick-{index}" for index in range(8)]})
+    featured = select_featured_picks(recommended)
+
+    assert len(featured) == 6
+    assert set(featured["selection_key"]).issubset(set(recommended["selection_key"]))
+
+
+def test_betting_board_uses_recommended_and_featured_pick_terminology() -> None:
+    source = __import__("pathlib").Path(
+        "src/dashboard/pages/betting.py"
+    ).read_text(encoding="utf-8")
+    assert "Javasolt tippek" in source
+    assert "Recommended Picks" in source
+    assert "Kiemelt tippek" in source
+    assert "Featured Picks" in source

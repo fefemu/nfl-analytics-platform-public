@@ -150,6 +150,34 @@ def select_best_candidates(
     return result.drop_duplicates(["game_id", "market_key"], keep="first").reset_index(drop=True)
 
 
+def select_recommended_picks(
+    board: pd.DataFrame,
+    as_of: datetime | None = None,
+) -> pd.DataFrame:
+    """Return the canonical publication-eligible picks for the next betting week."""
+
+    forward = prepare_forward_candidates(board, now=as_of)
+    _, next_week = select_next_betting_week(forward)
+    if next_week.empty:
+        return next_week.copy()
+    classified = classify_publication_candidates(next_week)
+    return select_best_candidates(
+        classified.loc[classified["publication_eligible"]],
+        positive_only=True,
+    )
+
+
+def select_featured_picks(
+    recommended: pd.DataFrame,
+    limit: int = 6,
+) -> pd.DataFrame:
+    """Return a presentation-only subset of canonical Recommended Picks."""
+
+    if limit < 0:
+        raise ValueError("Featured pick limit must not be negative.")
+    return recommended.head(limit).copy()
+
+
 def classify_publication_candidates(
     board: pd.DataFrame,
     criteria: TopPickCriteria = TOP_PICK_CRITERIA,
@@ -224,8 +252,8 @@ def top_pick_criteria_text(language: str) -> str:
             f"{criteria.minimum_expected_value_percent:g}–"
             f"{criteria.maximum_expected_value_percent:g}% EV és legalább "
             f"{criteria.minimum_bookmakers} fogadóiroda. Az egymásnak ellentmondó "
-            "Moneyline- és Spread-jelzések nem kerülnek a kiválasztott piaci "
-            "jelzések közé."
+            "Moneyline- és Spread-jelzések nem kerülnek a Javasolt tippek "
+            "közé."
         )
     return (
         f"Current criteria: at least {probability:.0f}% model probability, "
@@ -234,7 +262,7 @@ def top_pick_criteria_text(language: str) -> str:
         f"{criteria.minimum_expected_value_percent:g}–"
         f"{criteria.maximum_expected_value_percent:g}% EV and at least "
         f"{criteria.minimum_bookmakers} bookmakers. Conflicting Moneyline and "
-        "Spread signals are excluded from selected market signals."
+        "Spread signals are excluded from Recommended Picks."
     )
 
 
@@ -245,14 +273,14 @@ def top_pick_guardrail_text(language: str) -> str:
         return (
             "Ha a Moneyline- és Spread-modellek ugyanazon mérkőzés várható "
             "győztesében nem értenek egyet, egyik side-jelzés sem kerül a "
-            "Kiválasztott piaci jelzések közé. Az eredeti modellbecslések és "
+            "Javasolt tippek közé. Az eredeti modellbecslések és "
             "piaci jelzések ettől nem változnak. A Total piacot ez a szabály "
             "nem érinti."
         )
     return (
         "If the Moneyline and Spread models disagree on the expected winner of "
-        "the same game, neither side recommendation is included in Selected "
-        "Market Signals. The underlying model predictions and market signals "
+        "the same game, neither side recommendation is included in Recommended "
+        "Picks. The underlying model predictions and market signals "
         "remain unchanged. Totals are not affected by this rule."
     )
 
